@@ -1,0 +1,200 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Channel {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  status      String   @default("stopped") // stopped, starting, running, error
+  color       String   @default("#ef4444")
+  order       Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  settings    ChannelSettings?
+  playlists   Playlist[]
+  media       ChannelMedia[]
+  logs        AsRunLog[]
+  logos       LogoOverlay[]
+  graphics    GraphicsOverlay[]
+  recordings  ConformanceRecording[]
+}
+
+model ChannelSettings {
+  id              String  @id @default(cuid())
+  channelId       String  @unique
+  channel         Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  // Video settings
+  width           Int     @default(1920)
+  height          Int     @default(1080)
+  fps             Float   @default(25.0)
+  videoCodec      String  @default("libx264")
+  videoBitrate    Int     @default(4500) // kbps
+  videoPreset     String  @default("medium")
+  videoProfile    String  @default("high")
+  gopSize         Int     @default(50)
+  keyframeInt     Int     @default(2)
+
+  // Audio settings
+  audioCodec      String  @default("aac")
+  audioBitrate    Int     @default(128) // kbps
+  audioSampleRate Int     @default(48000)
+  audioChannels   Int     @default(2)
+  loudnessNorm    Boolean @default(false)
+  loudnessTarget  Float   @default(-23.0)
+
+  // Output settings
+  outputFormat    String  @default("mpegts")
+  outputProtocol  String  @default("rtmp")
+  outputUrl       String  @default("")
+  outputKey       String  @default("")
+  customOutput    String  @default("")
+
+  // Playout settings
+  loopPlaylist    Boolean @default(true)
+  autoRecover     Boolean @default(true)
+  fillerMode      String  @default("black") // black, image, playlist
+  fillerPath      String  @default("")
+
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Media {
+  id          String   @id @default(cuid())
+  filename    String
+  title       String?
+  path        String
+  fileType    String   @default("video") // video, audio, image
+  fileSize    Int      @default(0)
+  duration    Float    @default(0)
+  resolution  String?
+  codec       String?
+  bitrate     Int      @default(0)
+  frameRate   Float?
+  sampleRate  Int?
+  channels    Int?
+  category    String?
+  tags        String?  // JSON array stored as string
+  thumbnail   String?
+  status      String   @default("ready") // ready, processing, error
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  channelLinks ChannelMedia[]
+}
+
+model ChannelMedia {
+  id        String  @id @default(cuid())
+  channelId String
+  mediaId   String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  media     Media   @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+
+  @@unique([channelId, mediaId])
+}
+
+model Playlist {
+  id        String   @id @default(cuid())
+  channelId String
+  channel   Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  name      String
+  isActive  Boolean  @default(false)
+  loop      Boolean  @default(true)
+  startDate DateTime?
+  endDate   DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  items     PlaylistItem[]
+}
+
+model PlaylistItem {
+  id          String   @id @default(cuid())
+  playlistId  String
+  playlist    Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
+  mediaId     String
+  title       String
+  artist      String?
+  duration    Float    @default(0)
+  order       Int      @default(0)
+  transition  String   @default("cut") // cut, crossfade, fade-through-white, fade-through-black, dissolve
+  transitionDur Float  @default(1.0)
+  inPoint     Float    @default(0)
+  outPoint    Float?
+  customText  String?
+  status      String   @default("pending") // pending, playing, played, error
+  startedAt   DateTime?
+  endedAt     DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AsRunLog {
+  id          String   @id @default(cuid())
+  channelId   String
+  channel     Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  playlistId  String?
+  mediaId     String?
+  title       String
+  duration    Float    @default(0)
+  startedAt   DateTime @default(now())
+  endedAt     DateTime?
+  status      String   @default("success") // success, error, skipped
+  error       String?
+  createdAt   DateTime @default(now())
+}
+
+model LogoOverlay {
+  id        String  @id @default(cuid())
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  name      String
+  path      String
+  opacity   Float   @default(1.0)
+  posX      String  @default("right")
+  posY      String  @default("top")
+  offsetX   Int     @default(20)
+  offsetY   Int     @default(20)
+  sizeW     Int     @default(200)
+  sizeH     Int     @default(0) // 0 = auto
+  active    Boolean @default(true)
+  category  String?
+  startTime String?  // HH:MM:SS - when to show
+  endTime   String?  // HH:MM:SS - when to hide
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model GraphicsOverlay {
+  id        String  @id @default(cuid())
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  name      String
+  html      String  @default("")
+  css       String  @default("")
+  position  String  @default("bottom-left")
+  duration  Float   @default(5.0)
+  active    Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConformanceRecording {
+  id        String   @id @default(cuid())
+  channelId String
+  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  filePath  String
+  fileSize  Int      @default(0)
+  duration  Float    @default(0)
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  status    String   @default("recording") // recording, completed, error
+}
