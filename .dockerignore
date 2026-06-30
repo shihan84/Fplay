@@ -1,0 +1,70 @@
+# Dependencies
+node_modules
+.pnp
+.pnp.*
+
+# Next.js
+.next/
+out/
+
+# Build
+build
+dist
+
+# Database (persisted via volume)
+db/
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Debug / Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+server.log
+dev.log
+dev.out.log
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Internal tool artifacts
+.zscripts/
+.z-ai-config
+.claude
+tool-results/
+dashboard.png
+test
+prompt
+
+# Docker (avoid recursive copy)
+docker-compose*.yml
+Dockerfile*
+.dockerignore
+
+# Skills
+skills/
+
+# Misc
+coverage
+*.tsbuildinfo
+next-env.d.ts
+vercel
+download/
+examples/
+
+# Mini-services (built separately)
+mini-services/

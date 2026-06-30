@@ -1,0 +1,22 @@
+{$DOMAIN:localhost} {
+	# Route XTransformPort=3005 to the realtime (Socket.IO) service
+	@realtime_port query XTransformPort=3005
+	handle @realtime_port {
+		reverse_proxy realtime:3005 {
+			header_up Host {host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+
+	# Default: Next.js app
+	handle {
+		reverse_proxy app:3000 {
+			header_up Host {host}
+			header_up X-Forwarded-For {remote_host}
+			header_up X-Forwarded-Proto {scheme}
+			header_up X-Real-IP {remote_host}
+		}
+	}
+}
