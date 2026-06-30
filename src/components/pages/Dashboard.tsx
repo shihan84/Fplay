@@ -164,21 +164,30 @@ export function Dashboard() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [sysStats, logsRes, channelsList] = await Promise.all([
+        const results = await Promise.allSettled([
           systemApi.stats(),
           logsApi.list({ limit: 5 }),
           channelsApi.list(),
         ])
 
-        setSystemStats(sysStats)
-
-        if (logsRes?.logs) {
-          setRecentLogs(logsRes.logs)
+        if (results[0].status === 'fulfilled') {
+          setSystemStats(results[0].value)
         }
 
-        // Calculate total media count
-        const mediaCount = channelsList.reduce((sum: number, ch: any) => sum + (ch._count?.media || 0), 0)
-        setTotalMedia(mediaCount)
+        if (results[1].status === 'fulfilled') {
+          const logsRes = results[1].value
+          if (logsRes?.data) {
+            setRecentLogs(logsRes.data)
+          } else if (logsRes?.logs) {
+            setRecentLogs(logsRes.logs)
+          }
+        }
+
+        if (results[2].status === 'fulfilled') {
+          const channelsList = results[2].value
+          const mediaCount = channelsList.reduce((sum: number, ch: any) => sum + (ch._count?.media || 0), 0)
+          setTotalMedia(mediaCount)
+        }
       } catch (err) {
         console.error('Dashboard fetch error:', err)
       } finally {
@@ -225,16 +234,22 @@ export function Dashboard() {
 
   const handleRefresh = useCallback(() => {
     setLoading(true)
-    Promise.all([
+    Promise.allSettled([
       systemApi.stats(),
       logsApi.list({ limit: 5 }),
       channelsApi.list(),
     ])
-      .then(([sysStats, logsRes, channelsList]) => {
-        setSystemStats(sysStats)
-        if (logsRes?.logs) setRecentLogs(logsRes.logs)
-        const mediaCount = channelsList.reduce((sum: number, ch: any) => sum + (ch._count?.media || 0), 0)
-        setTotalMedia(mediaCount)
+      .then((results) => {
+        if (results[0].status === 'fulfilled') setSystemStats(results[0].value)
+        if (results[1].status === 'fulfilled') {
+          const logsRes = results[1].value
+          if (logsRes?.data) setRecentLogs(logsRes.data)
+          else if (logsRes?.logs) setRecentLogs(logsRes.logs)
+        }
+        if (results[2].status === 'fulfilled') {
+          const mediaCount = results[2].value.reduce((sum: number, ch: any) => sum + (ch._count?.media || 0), 0)
+          setTotalMedia(mediaCount)
+        }
       })
       .catch(console.error)
       .finally(() => setLoading(false))

@@ -133,8 +133,10 @@ export async function DELETE(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const playlistId = searchParams.get('id') || ''
     const body = await request.json()
-    const { action, playlistId, items, itemId, orderMap } = body
+    const { action, items, itemId, orderMap } = body
 
     switch (action) {
       case 'addItems': {
@@ -177,14 +179,17 @@ export async function PATCH(request: NextRequest) {
       }
 
       case 'updateItems': {
-        if (!orderMap || typeof orderMap !== 'object') {
+        const mapToUpdate = orderMap || (items ? Object.fromEntries(
+          items.map((item: Record<string, unknown>) => [item.id, item])
+        ) : null)
+        if (!mapToUpdate || typeof mapToUpdate !== 'object') {
           return NextResponse.json(
-            { error: 'orderMap (id -> {order, ...}) is required' },
+            { error: 'orderMap or items with id is required' },
             { status: 400 }
           )
         }
 
-        const updatePromises = Object.entries(orderMap).map(
+        const updatePromises = Object.entries(mapToUpdate).map(
           async ([itemId, updates]: [string, unknown]) => {
             const data = updates as Record<string, unknown>
             return db.playlistItem.update({

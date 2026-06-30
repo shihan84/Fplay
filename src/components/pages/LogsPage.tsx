@@ -113,17 +113,14 @@ export function LogsPage() {
   const { data, isLoading } = useQuery({
     queryKey: ['logs', effectiveChannelId, statusFilter, page, sortField, sortDir],
     queryFn: async () => {
-      if (!effectiveChannelId) return { logs: [] as AsRunLog[], total: 0 }
+      if (!effectiveChannelId) return { data: [] as AsRunLog[], pagination: { page: 1, limit: PAGE_SIZE, total: 0, totalPages: 0 } }
       const res = await logsApi.list({
         channelId: effectiveChannelId,
+        page: page + 1,
         limit: PAGE_SIZE,
-        offset: page * PAGE_SIZE,
+        status: statusFilter !== 'all' ? statusFilter : undefined,
       })
-      let logs = res.logs || []
-      // Client-side status filter
-      if (statusFilter !== 'all') {
-        logs = logs.filter((l: AsRunLog) => l.status === statusFilter)
-      }
+      let logs = res.data || []
       // Client-side sort
       logs = [...logs].sort((a: AsRunLog, b: AsRunLog) => {
         let cmp = 0
@@ -135,7 +132,7 @@ export function LogsPage() {
         return sortDir === 'asc' ? cmp : -cmp
       })
       setLocalLogs(logs)
-      setTotal(res.total || logs.length)
+      setTotal(res.pagination?.total || logs.length)
       return res
     },
     enabled: !!effectiveChannelId,

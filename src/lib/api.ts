@@ -1,21 +1,48 @@
 const API_BASE = '/api'
+const MAX_RETRIES = 2
+const RETRY_DELAY = 500
 
 export async function apiFetch<T>(
   path: string,
   options?: RequestInit
 ): Promise<T> {
-  const res = await fetch(`${API_BASE}${path}`, {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options?.headers,
-    },
-    ...options,
-  })
-  if (!res.ok) {
-    const error = await res.json().catch(() => ({ message: res.statusText }))
-    throw new Error(error.message || `API Error: ${res.status}`)
+  let lastError: Error | null = null
+
+  for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
+    try {
+      const res = await fetch(`${API_BASE}${path}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          ...options?.headers,
+        },
+        ...options,
+      })
+
+      if (res.ok) {
+        return res.json()
+      }
+
+      // Retry on 404 (Turbopack compilation race) or 500 (server not ready)
+      if ((res.status === 404 || res.status === 500) && attempt < MAX_RETRIES) {
+        lastError = new Error(`API ${res.status} (attempt ${attempt + 1}, retrying...)`)
+        await new Promise((r) => setTimeout(r, RETRY_DELAY * (attempt + 1)))
+        continue
+      }
+
+      const error = await res.json().catch(() => ({ message: res.statusText }))
+      throw new Error(error.message || `API Error: ${res.status}`)
+    } catch (err) {
+      if (err instanceof TypeError && attempt < MAX_RETRIES) {
+        // Network error - retry
+        lastError = err as Error
+        await new Promise((r) => setTimeout(r, RETRY_DELAY * (attempt + 1)))
+        continue
+      }
+      throw err
+    }
   }
-  return res.json()
+
+  throw lastError || new Error(`API Error: ${path}`)
 }
 
 // Channels
@@ -32,12 +59,13 @@ export const channelsApi = {
 
 // Media
 export const mediaApi = {
-  list: (params?: { channelId?: string; search?: string; category?: string }) => {
+  list: async (params?: { channelId?: string; search?: string; category?: string }) => {
     const query = new URLSearchParams()
     if (params?.channelId) query.set('channelId', params.channelId)
     if (params?.search) query.set('search', params.search)
     if (params?.category) query.set('category', params.category)
-    return apiFetch<any[]>(`/media?${query}`)
+    const res = await apiFetch<{ data: any[]; pagination: any }>(`/media?${query}`)
+    return res.data ?? res
   },
   upload: (formData: FormData) =>
     fetch(`${API_BASE}/media`, { method: 'POST', body: formData }).then((r) => {
@@ -83,12 +111,13 @@ export const settingsApi = {
 
 // Logs
 export const logsApi = {
-  list: (params?: { channelId?: string; limit?: number; offset?: number }) => {
+  list: (params?: { channelId?: string; page?: number; limit?: number; status?: string }) => {
     const query = new URLSearchParams()
     if (params?.channelId) query.set('channelId', params.channelId)
+    if (params?.page) query.set('page', String(params.page))
     if (params?.limit) query.set('limit', String(params.limit))
-    if (params?.offset) query.set('offset', String(params.offset))
-    return apiFetch<{ logs: any[]; total: number }>(`/logs?${query}`)
+    if (params?.status) query.set('status', params.status)
+    return apiFetch<{ data: any[]; pagination: { page: number; limit: number; total: number; totalPages: number } }>(`/logs?${query}`)
   },
   exportCsv: (channelId: string) =>
     fetch(`${API_BASE}/logs?channelId=${channelId}&export=csv`).then((r) => r.text()),
@@ -122,6 +151,6 @@ export const recordingsApi = {
 
 // System
 export const systemApi = {
-  stats: () => apiFetch<any>('/system/stats'),
-  info: () => apiFetch<any>('/system/info'),
+  stats: () => apiFetch<any>('/system'),
+  info: () => apiFetch<any>('/system'),
 }
