@@ -4,8 +4,14 @@
 FROM oven/bun:1 AS runner
 WORKDIR /app
 
-# Install ffmpeg and wget for the playout engine and healthcheck
-RUN apt-get update && apt-get install -y ffmpeg wget && rm -rf /var/lib/apt/lists/*
+# Install ffmpeg, wget, and fonts for drawtext overlays
+RUN apt-get update && apt-get install -y \
+    ffmpeg wget \
+    fonts-dejavu-core \
+    fonts-liberation \
+    fonts-noto-core \
+    fonts-open-sans \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create non-root user
 RUN groupadd --system --gid 1001 nodejs && \

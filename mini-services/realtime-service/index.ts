@@ -353,8 +353,20 @@ function buildTextFilter(overlays: TextOverlay[], width: number, height: number)
 
   const filters: string[] = []
 
-  // Default font — avoids fontconfig cache errors in Docker
-  const DEFAULT_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+  // Font priority: Liberation Sans (clean broadcast look) → DejaVu Bold → DejaVu
+  // Explicit fontfile bypasses fontconfig entirely — required in Docker containers
+  const FONTS = [
+    '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
+    '/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
+    '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
+  ]
+  const { existsSync } = require('fs')
+  const DEFAULT_FONT = FONTS.find(existsSync) || FONTS[FONTS.length - 1]
+
+  // Escape text for FFmpeg drawtext when passed via spawn args array (no shell)
+  // Rules: escape \ → \\, escape : → \:, escape ' → \', no surrounding quotes needed
+  const escText = (t: string) => t.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:')
 
   active.forEach((o) => {
     const fontPath = o.fontFile || DEFAULT_FONT
@@ -378,52 +390,53 @@ function buildTextFilter(overlays: TextOverlay[], width: number, height: number)
              : oy !== 0            ? `(h-th)/2+${oy}`
              : '(h-th)/2'
 
-    // Background box helper
+    // Background box helper — drawbox uses pixel coords not text-relative
     const bgBox = o.bgColor
-      ? `drawbox=x=${x === '(w-tw)/2' ? '(iw-tw)/2' : x}:y=${y === '(h-th)/2' ? '(ih-th)/2' : y}` +
-        `:w=tw:h=th:color=${o.bgColor}@${o.bgOpacity ?? 0.5}:t=fill,`
+      ? `drawbox=x=0:y=${y}:w=iw:h=${fs + 16}:color=${o.bgColor}@${o.bgOpacity ?? 0.5}:t=fill,`
       : ''
 
     if (o.type === 'ticker') {
-      // Scrolling ticker — text moves right to left across width
+      // Scrolling ticker — text moves right to left
+      // %{n} is frame number, used to derive scroll position without t*speed precision issues
       const speed = o.scrollSpeed || 100
       const tickerY = o.posY === 'top' ? `${oy}` : `h-th-${oy}`
       const bgTicker = o.bgColor
-        ? `drawbox=x=0:y=${tickerY}-4:w=iw:h=th+8:color=${o.bgColor}@${o.bgOpacity ?? 0.7}:t=fill,`
+        ? `drawbox=x=0:y=${tickerY}:w=iw:h=th+16:color=${o.bgColor}@${o.bgOpacity ?? 0.7}:t=fill,`
         : ''
       filters.push(
-        `${bgTicker}drawtext=${font}text='${o.text.replace(/'/g, "\\'")}':` +
+        `${bgTicker}drawtext=${font}text=${escText(o.text)}:` +
         `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
         `x=w-mod(t*${speed}\\,w+tw):y=${tickerY}`
       )
     } else if (o.type === 'clock') {
-      // Live clock — %{localtime} expression
+      // Live clock — %{localtime\:fmt} syntax, colons in format must be escaped as \: for spawn
+      // When passed as array element to spawn, single backslash is needed in the string
       filters.push(
-        `drawtext=${font}text='%{localtime\\:%H\\:%M\\:%S}':` +
+        `drawtext=${font}text=%{localtime\\:%H\\:%M\\:%S}:` +
         `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
         `x=${x}:y=${y}`
       )
     } else if (o.type === 'lowerthird') {
-      // Lower third — main text + smaller sub text above it
+      // Lower third — full-width bg bar + main title + sub title
       const subFs = o.subFontSize || 22
       const ltY = `h-th-${oy}`
-      const subY = `h-th-${oy + fs + 6}`
+      const subY = `h-th-${oy + fs + 8}`
       const ltBg = o.bgColor
-        ? `drawbox=x=0:y=h-${oy + fs + subFs + 20}:w=iw:h=${fs + subFs + 20}:color=${o.bgColor}@${o.bgOpacity ?? 0.6}:t=fill,`
+        ? `drawbox=x=0:y=h-${oy + fs + subFs + 24}:w=iw:h=${fs + subFs + 24}:color=${o.bgColor}@${o.bgOpacity ?? 0.6}:t=fill,`
         : ''
       const subFilter = o.subText
-        ? `,drawtext=${font}text='${(o.subText).replace(/'/g, "\\'")}':` +
-          `fontsize=${subFs}:fontcolor=${color}@0.85:borderw=1:bordercolor=${outlineColor}:x=40:y=${subY}`
+        ? `,drawtext=${font}text=${escText(o.subText)}:` +
+          `fontsize=${subFs}:fontcolor=${color}:alpha=0.85:borderw=1:bordercolor=${outlineColor}:x=40:y=${subY}`
         : ''
       filters.push(
-        `${ltBg}drawtext=${font}text='${o.text.replace(/'/g, "\\'")}':` +
+        `${ltBg}drawtext=${font}text=${escText(o.text)}:` +
         `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
         `x=40:y=${ltY}${subFilter}`
       )
     } else {
-      // static text
+      // Static text
       filters.push(
-        `${bgBox}drawtext=${font}text='${o.text.replace(/'/g, "\\'")}':` +
+        `${bgBox}drawtext=${font}text=${escText(o.text)}:` +
         `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
         `x=${x}:y=${y}`
       )
