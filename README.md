@@ -1,4 +1,4 @@
-# Fplay — Professional Broadcast Playout System
+# F-play — Professional Broadcast Playout System
 
 > **Copyright © 2025–2026 Itassist Broadcast Solutions. All rights reserved.**
 > This is proprietary, licensed software. Unauthorized copying, distribution, or modification is strictly prohibited.
@@ -7,7 +7,7 @@
 
 ## Overview
 
-**Fplay** is a professional-grade, web-based multi-channel broadcast playout and streaming system developed by **Itassist Broadcast Solutions**. It provides frame-accurate scheduling, live logo overlay compositing, real-time stream control, and a modern browser-based operator interface — all powered by FFmpeg and delivered via a containerized Docker architecture.
+**F-play** is a professional-grade, web-based multi-channel broadcast playout and streaming system developed by **Itassist Broadcast Solutions**. It provides frame-accurate scheduling, live logo overlay compositing, real-time stream control, and a modern browser-based operator interface — all powered by FFmpeg and delivered via a containerized Docker architecture.
 
 ---
 
@@ -129,4 +129,4 @@ For licensing inquiries, contact: **info@itassist.one**
 
 ---
 
-*Fplay is developed and maintained by Itassist Broadcast Solutions.*
+*F-play is developed and maintained by Itassist Broadcast Solutions.*

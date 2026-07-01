@@ -54,7 +54,7 @@ export function AppHeader({ connected }: { connected: boolean }) {
 
       {/* Breadcrumb */}
       <div className="flex items-center gap-2 text-sm">
-        <span className="text-zinc-500 font-medium">ffplayout</span>
+        <span className="text-zinc-500 font-medium">F-play</span>
         <span className="text-zinc-600">/</span>
         <span className="text-zinc-200 font-medium">{breadcrumb}</span>
       </div>

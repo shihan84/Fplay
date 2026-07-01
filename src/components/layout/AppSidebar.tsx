@@ -58,7 +58,7 @@ export function AppSidebar() {
               exit={{ opacity: 0 }}
               className="flex items-center gap-2 overflow-hidden"
             >
-              <span className="font-bold text-lg text-white tracking-tight">ffplayout</span>
+              <span className="font-bold text-lg text-white tracking-tight">F-play</span>
               <Badge variant="secondary" className="bg-emerald-600/20 text-emerald-400 text-[10px] px-1.5 py-0">
                 v2.0
               </Badge>

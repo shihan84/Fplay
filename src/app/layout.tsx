@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "ffplayout - Multi-Channel Playout System",
+  title: "F-play - Multi-Channel Playout System",
   description: "Professional broadcast playout system with FFmpeg engine, web-based control UI, and streaming output. Multi-channel support with frame-accurate scheduling.",
   icons: {
     icon: "https://z-cdn.chatglm.cn/z-ai/static/logo.svg",
