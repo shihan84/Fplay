@@ -34,6 +34,9 @@ type ChannelSettings = {
   outputProtocol?: string
   outputUrl?: string
   outputKey?: string
+  videoPid?: number
+  audioPid?: number
+  pmtPid?: number
   loopPlaylist?: boolean
   autoRecover?: boolean
   fillerMode?: string
@@ -330,6 +333,12 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
   const audioSampleRate = settings.audioSampleRate || 44100
   const audioChannels = settings.audioChannels || 2
 
+  // MPEG-TS PID args — only injected when output format is mpegts
+  const pidArgs: string[] = outFormat === 'mpegts' ? [
+    '-mpegts_pmt_start_pid', String(settings.pmtPid ?? 4096),
+    '-mpegts_start_pid',     String(settings.videoPid ?? 256),
+  ] : []
+
   const concatFile = buildPlaylistFile(channelId, items)
 
   if (concatFile) {
@@ -362,6 +371,7 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
         '-b:a', `${audioBitrate}k`,
         '-ar', String(audioSampleRate),
         '-ac', String(audioChannels),
+        ...pidArgs,
         '-f', outFormat,
         outputUrl,
       ]
@@ -378,6 +388,7 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
       '-b:a', `${audioBitrate}k`,
       '-ar', String(audioSampleRate),
       '-ac', String(audioChannels),
+      ...pidArgs,
       '-f', outFormat,
       outputUrl,
     ]
@@ -399,6 +410,7 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
     '-b:a', `${audioBitrate}k`,
     '-ar', String(audioSampleRate),
     '-ac', String(audioChannels),
+    ...pidArgs,
     '-f', outFormat,
     outputUrl,
   ]

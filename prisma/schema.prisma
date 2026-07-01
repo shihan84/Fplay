@@ -50,6 +50,11 @@ model ChannelSettings {
   loudnessNorm    Boolean @default(false)
   loudnessTarget  Float   @default(-23.0)
 
+  // MPEG-TS PID settings (used when outputFormat is mpegts)
+  videoPid        Int     @default(256)   // 0x0100
+  audioPid        Int     @default(272)   // 0x0110
+  pmtPid          Int     @default(4096)  // 0x1000
+
   // Output settings
   outputFormat    String  @default("mpegts")
   outputProtocol  String  @default("rtmp")

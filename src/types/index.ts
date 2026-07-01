@@ -42,6 +42,9 @@ export interface ChannelSettings {
   audioChannels: number
   loudnessNorm: boolean
   loudnessTarget: number
+  videoPid: number
+  audioPid: number
+  pmtPid: number
   outputFormat: string
   outputProtocol: string
   outputUrl: string

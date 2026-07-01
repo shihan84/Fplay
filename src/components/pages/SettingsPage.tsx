@@ -44,6 +44,9 @@ const defaultSettings: Omit<ChannelSettings, 'id' | 'channelId' | 'createdAt' | 
   outputUrl: '',
   outputKey: '',
   customOutput: '',
+  videoPid: 256,
+  audioPid: 272,
+  pmtPid: 4096,
   loopPlaylist: true,
   autoRecover: true,
   fillerMode: 'black',
@@ -97,6 +100,9 @@ export function SettingsPage() {
         outputUrl: data.outputUrl ?? defaultSettings.outputUrl,
         outputKey: data.outputKey ?? defaultSettings.outputKey,
         customOutput: data.customOutput ?? defaultSettings.customOutput,
+        videoPid: data.videoPid ?? defaultSettings.videoPid,
+        audioPid: data.audioPid ?? defaultSettings.audioPid,
+        pmtPid: data.pmtPid ?? defaultSettings.pmtPid,
         loopPlaylist: data.loopPlaylist ?? defaultSettings.loopPlaylist,
         autoRecover: data.autoRecover ?? defaultSettings.autoRecover,
         fillerMode: data.fillerMode ?? defaultSettings.fillerMode,
@@ -491,6 +497,64 @@ export function SettingsPage() {
                   />
                 </div>
               )}
+            </CardContent>
+          </Card>
+
+          {/* ── MPEG-TS PID Settings ── */}
+          <Card className="border-zinc-800 bg-zinc-900/60">
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Settings2 className="size-4 text-emerald-400" />
+                  <CardTitle className="text-base">MPEG-TS PID Settings</CardTitle>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => saveSection('video')}
+                  disabled={saving === 'video'}
+                  className="bg-emerald-600 hover:bg-emerald-700 text-white"
+                >
+                  {saving === 'video' ? 'Saving...' : 'Save'}
+                </Button>
+              </div>
+              <p className="text-xs text-zinc-500">Program IDs for MPEG-TS streams (IPTV/DVB). Only applied when output format is MPEG-TS.</p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <Label className="text-sm text-zinc-300">Video PID</Label>
+                  <Input
+                    type="number"
+                    value={settings.videoPid ?? 256}
+                    onChange={(e) => updateField('videoPid', parseInt(e.target.value) || 256)}
+                    className="bg-zinc-800 border-zinc-700 text-zinc-200"
+                    placeholder="256"
+                  />
+                  <p className="text-xs text-zinc-600">Default: 256 (0x0100)</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm text-zinc-300">Audio PID</Label>
+                  <Input
+                    type="number"
+                    value={settings.audioPid ?? 272}
+                    onChange={(e) => updateField('audioPid', parseInt(e.target.value) || 272)}
+                    className="bg-zinc-800 border-zinc-700 text-zinc-200"
+                    placeholder="272"
+                  />
+                  <p className="text-xs text-zinc-600">Default: 272 (0x0110)</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-sm text-zinc-300">PMT PID</Label>
+                  <Input
+                    type="number"
+                    value={settings.pmtPid ?? 4096}
+                    onChange={(e) => updateField('pmtPid', parseInt(e.target.value) || 4096)}
+                    className="bg-zinc-800 border-zinc-700 text-zinc-200"
+                    placeholder="4096"
+                  />
+                  <p className="text-xs text-zinc-600">Default: 4096 (0x1000)</p>
+                </div>
+              </div>
             </CardContent>
           </Card>
 
