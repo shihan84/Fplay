@@ -353,8 +353,12 @@ function buildTextFilter(overlays: TextOverlay[], width: number, height: number)
 
   const filters: string[] = []
 
+  // Default font — avoids fontconfig cache errors in Docker
+  const DEFAULT_FONT = '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf'
+
   active.forEach((o) => {
-    const font = o.fontFile ? `fontfile=${o.fontFile}:` : ''
+    const fontPath = o.fontFile || DEFAULT_FONT
+    const font = `fontfile=${fontPath}:`
     const color = o.fontColor || 'white'
     const outlineColor = o.outlineColor || 'black'
     const outline = o.outline ?? 2
