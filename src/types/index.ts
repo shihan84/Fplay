@@ -139,6 +139,7 @@ export interface LogoOverlay {
   sizeW: number
   sizeH: number
   active: boolean
+  bgColor: string | null
   category: string | null
   startTime: string | null
   endTime: string | null

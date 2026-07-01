@@ -272,8 +272,16 @@ function buildLogoFilter(logos: LogoOverlay[], width: number, height: number): {
     const scaleW = logo.sizeW || 200
     const scaleH = logo.sizeH && logo.sizeH > 0 ? logo.sizeH : -1
 
-    const posX = logo.posX === 'left' ? logo.offsetX : logo.posX === 'right' ? `W-w-${logo.offsetX}` : '(W-w)/2'
-    const posY = logo.posY === 'top' ? logo.offsetY : logo.posY === 'bottom' ? `H-h-${logo.offsetY}` : '(H-h)/2'
+    const ox = logo.offsetX ?? 0
+    const oy = logo.offsetY ?? 0
+    const posX = logo.posX === 'left'   ? `${ox}`
+               : logo.posX === 'right'  ? `W-w-${ox}`
+               : ox !== 0              ? `(W-w)/2+${ox}`
+               : '(W-w)/2'
+    const posY = logo.posY === 'top'    ? `${oy}`
+               : logo.posY === 'bottom' ? `H-h-${oy}`
+               : oy !== 0              ? `(H-h)/2+${oy}`
+               : '(H-h)/2'
 
     const isJpeg = /\.(jpg|jpeg)$/i.test(logo.path)
 
