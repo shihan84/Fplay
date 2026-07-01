@@ -109,7 +109,7 @@ export const playlistsApi = {
 export const settingsApi = {
   get: (channelId: string) => apiFetch<any>(`/settings?channelId=${channelId}`),
   update: (channelId: string, data: any) =>
-    apiFetch<any>(`/settings?channelId=${channelId}`, { method: 'PUT', body: JSON.stringify(data) }),
+    apiFetch<any>(`/settings?channelId=${channelId}`, { method: 'PUT', body: JSON.stringify({ ...data, channelId }) }),
 }
 
 // Logs
