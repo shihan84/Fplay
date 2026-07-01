@@ -15,6 +15,7 @@ import { PlayoutControls } from '@/components/pages/PlayoutControls'
 import { SettingsPage } from '@/components/pages/SettingsPage'
 import { LogsPage } from '@/components/pages/LogsPage'
 import { OverlayPage } from '@/components/pages/OverlayPage'
+import { TextOverlayPage } from '@/components/pages/TextOverlayPage'
 import { RecordingsPage } from '@/components/pages/RecordingsPage'
 import type { ChannelStatus } from '@/types'
 
@@ -65,6 +66,7 @@ export function AppLayout() {
       case 'settings': return <SettingsPage />
       case 'logs': return <LogsPage />
       case 'overlay': return <OverlayPage />
+      case 'text-overlay': return <TextOverlayPage />
       case 'recordings': return <RecordingsPage />
       default: return <Dashboard />
     }

@@ -22,8 +22,49 @@ model Channel {
   media       ChannelMedia[]
   logs        AsRunLog[]
   logos       LogoOverlay[]
+  textOverlays TextOverlay[]
   graphics    GraphicsOverlay[]
   recordings  ConformanceRecording[]
+}
+
+model TextOverlay {
+  id           String   @id @default(cuid())
+  channelId    String
+  channel      Channel  @relation(fields: [channelId], references: [id], onDelete: Cascade)
+
+  name         String   @default("")
+  type         String   @default("static")  // static | ticker | clock | lowerthird
+  active       Boolean  @default(true)
+
+  // Content
+  text         String   @default("")
+  fontFile     String   @default("")        // path to .ttf font or empty for built-in
+  fontSize     Int      @default(32)
+  fontColor    String   @default("white")
+  bgColor      String   @default("")        // empty = transparent background
+  bgOpacity    Float    @default(0.5)
+  outline      Int      @default(2)         // outline/border width in px
+  outlineColor String   @default("black")
+
+  // Position (for static/clock/lowerthird)
+  posX         String   @default("center")  // left|center|right or pixel value
+  posY         String   @default("bottom")  // top|center|bottom or pixel value
+  offsetX      Int      @default(0)
+  offsetY      Int      @default(40)
+
+  // Ticker specific
+  scrollSpeed  Int      @default(100)       // pixels per second
+
+  // Lower third specific
+  subText      String   @default("")        // second line
+  subFontSize  Int      @default(22)
+
+  // Schedule
+  startTime    String   @default("")
+  endTime      String   @default("")
+
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
 }
 
 model ChannelSettings {

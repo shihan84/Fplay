@@ -5,7 +5,7 @@ import { motion } from 'framer-motion'
 import {
   LayoutDashboard, Radio, FolderOpen, ListVideo, Play,
   Layers, Settings, FileText, HardDrive, Tv, ChevronLeft,
-  PanelLeftClose, PanelLeft
+  PanelLeftClose, PanelLeft, Type
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +22,7 @@ const navItems: { view: ViewName; label: string; icon: React.ElementType }[] = [
   { view: 'playlist', label: 'Playlist Editor', icon: ListVideo },
   { view: 'playout', label: 'Playout Controls', icon: Play },
   { view: 'overlay', label: 'Graphics & Overlays', icon: Layers },
+  { view: 'text-overlay', label: 'Text Overlays', icon: Type },
   { view: 'settings', label: 'Settings', icon: Settings },
   { view: 'logs', label: 'As-Run Logs', icon: FileText },
   { view: 'recordings', label: 'Recordings', icon: HardDrive },

@@ -86,6 +86,29 @@ type LogoOverlay = {
   bgColor?: string | null
 }
 
+type TextOverlay = {
+  id: string
+  channelId: string
+  name: string
+  type: string   // static | ticker | clock | lowerthird
+  active: boolean
+  text: string
+  fontFile?: string
+  fontSize: number
+  fontColor: string
+  bgColor?: string
+  bgOpacity: number
+  outline: number
+  outlineColor: string
+  posX: string
+  posY: string
+  offsetX: number
+  offsetY: number
+  scrollSpeed: number
+  subText?: string
+  subFontSize: number
+}
+
 type Playlist = {
   id: string
   channelId: string
@@ -145,6 +168,15 @@ async function fetchLogos(channelId: string): Promise<LogoOverlay[]> {
     return await apiFetch<LogoOverlay[]>(`/logos?channelId=${channelId}`)
   } catch (err) {
     console.error(`Failed to fetch logos for ${channelId}:`, err)
+    return []
+  }
+}
+
+async function fetchTextOverlays(channelId: string): Promise<TextOverlay[]> {
+  try {
+    return await apiFetch<TextOverlay[]>(`/text-overlays?channelId=${channelId}`)
+  } catch (err) {
+    console.error(`Failed to fetch text overlays for ${channelId}:`, err)
     return []
   }
 }
@@ -315,7 +347,89 @@ function buildLogoFilter(logos: LogoOverlay[], width: number, height: number): {
   return { inputs, filterComplex: filters.join(';') }
 }
 
-function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: ChannelSettings, logos: LogoOverlay[] = []): string[] | null {
+function buildTextFilter(overlays: TextOverlay[], width: number, height: number): string {
+  const active = overlays.filter((o) => o.active)
+  if (active.length === 0) return ''
+
+  const filters: string[] = []
+
+  active.forEach((o) => {
+    const font = o.fontFile ? `fontfile=${o.fontFile}:` : ''
+    const color = o.fontColor || 'white'
+    const outlineColor = o.outlineColor || 'black'
+    const outline = o.outline ?? 2
+    const fs = o.fontSize || 32
+    const ox = o.offsetX ?? 0
+    const oy = o.offsetY ?? 40
+
+    // Resolve X position
+    const x = o.posX === 'left'   ? `${ox}`
+             : o.posX === 'right'  ? `w-tw-${ox}`
+             : ox !== 0            ? `(w-tw)/2+${ox}`
+             : '(w-tw)/2'
+
+    // Resolve Y position
+    const y = o.posY === 'top'    ? `${oy}`
+             : o.posY === 'bottom' ? `h-th-${oy}`
+             : oy !== 0            ? `(h-th)/2+${oy}`
+             : '(h-th)/2'
+
+    // Background box helper
+    const bgBox = o.bgColor
+      ? `drawbox=x=${x === '(w-tw)/2' ? '(iw-tw)/2' : x}:y=${y === '(h-th)/2' ? '(ih-th)/2' : y}` +
+        `:w=tw:h=th:color=${o.bgColor}@${o.bgOpacity ?? 0.5}:t=fill,`
+      : ''
+
+    if (o.type === 'ticker') {
+      // Scrolling ticker — text moves right to left across width
+      const speed = o.scrollSpeed || 100
+      const tickerY = o.posY === 'top' ? `${oy}` : `h-th-${oy}`
+      const bgTicker = o.bgColor
+        ? `drawbox=x=0:y=${tickerY}-4:w=iw:h=th+8:color=${o.bgColor}@${o.bgOpacity ?? 0.7}:t=fill,`
+        : ''
+      filters.push(
+        `${bgTicker}drawtext=${font}text='${o.text.replace(/'/g, "\\'")}':` +
+        `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
+        `x=w-mod(t*${speed}\\,w+tw):y=${tickerY}`
+      )
+    } else if (o.type === 'clock') {
+      // Live clock — %{localtime} expression
+      filters.push(
+        `drawtext=${font}text='%{localtime\\:%H\\:%M\\:%S}':` +
+        `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
+        `x=${x}:y=${y}`
+      )
+    } else if (o.type === 'lowerthird') {
+      // Lower third — main text + smaller sub text above it
+      const subFs = o.subFontSize || 22
+      const ltY = `h-th-${oy}`
+      const subY = `h-th-${oy + fs + 6}`
+      const ltBg = o.bgColor
+        ? `drawbox=x=0:y=h-${oy + fs + subFs + 20}:w=iw:h=${fs + subFs + 20}:color=${o.bgColor}@${o.bgOpacity ?? 0.6}:t=fill,`
+        : ''
+      const subFilter = o.subText
+        ? `,drawtext=${font}text='${(o.subText).replace(/'/g, "\\'")}':` +
+          `fontsize=${subFs}:fontcolor=${color}@0.85:borderw=1:bordercolor=${outlineColor}:x=40:y=${subY}`
+        : ''
+      filters.push(
+        `${ltBg}drawtext=${font}text='${o.text.replace(/'/g, "\\'")}':` +
+        `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
+        `x=40:y=${ltY}${subFilter}`
+      )
+    } else {
+      // static text
+      filters.push(
+        `${bgBox}drawtext=${font}text='${o.text.replace(/'/g, "\\'")}':` +
+        `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
+        `x=${x}:y=${y}`
+      )
+    }
+  })
+
+  return filters.join(',')
+}
+
+function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: ChannelSettings, logos: LogoOverlay[] = [], textOverlays: TextOverlay[] = []): string[] | null {
   const outputUrl = buildOutputUrl(settings)
   if (!outputUrl) {
     console.error(`No output URL configured for channel ${channelId}`)
@@ -352,6 +466,7 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
 
   if (concatFile) {
     const logoFilter = buildLogoFilter(logos, width, height)
+    const textFilter = buildTextFilter(textOverlays, width, height)
 
     const baseArgs = [
       '-re',
@@ -365,30 +480,7 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
       baseArgs.splice(0, 0, '-stream_loop', '-1')
     }
 
-    if (logoFilter) {
-      const args = [
-        ...baseArgs,
-        ...logoFilter.inputs,
-        '-filter_complex', logoFilter.filterComplex,
-        '-map', '[vout]',
-        '-map', '0:a',
-        '-c:v', 'libx264',
-        '-preset', settings.videoPreset || 'veryfast',
-        '-b:v', `${videoBitrate}k`,
-        '-r', String(fps),
-        '-c:a', 'aac',
-        '-b:a', `${audioBitrate}k`,
-        '-ar', String(audioSampleRate),
-        '-ac', String(audioChannels),
-        ...pidArgs,
-        '-f', outFormat,
-        outputUrl,
-      ]
-      return args
-    }
-
-    return [
-      ...baseArgs,
+    const encodeArgs = [
       '-c:v', 'libx264',
       '-preset', settings.videoPreset || 'veryfast',
       '-b:v', `${videoBitrate}k`,
@@ -400,6 +492,50 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
       ...pidArgs,
       '-f', outFormat,
       outputUrl,
+    ]
+
+    if (logoFilter && textFilter) {
+      // Both logo + text overlays — chain text filters onto the [vout] from logo overlay
+      const combined = `${logoFilter.filterComplex},[vout]${textFilter}[vout_final]`
+      return [
+        ...baseArgs,
+        ...logoFilter.inputs,
+        '-filter_complex', combined,
+        '-map', '[vout_final]',
+        '-map', '0:a',
+        ...encodeArgs,
+      ]
+    }
+
+    if (logoFilter) {
+      // Logo only
+      return [
+        ...baseArgs,
+        ...logoFilter.inputs,
+        '-filter_complex', logoFilter.filterComplex,
+        '-map', '[vout]',
+        '-map', '0:a',
+        ...encodeArgs,
+      ]
+    }
+
+    if (textFilter) {
+      // Text only — use vf (simple filter) since no extra inputs needed
+      return [
+        ...baseArgs,
+        '-vf', textFilter,
+        '-map', '0:v',
+        '-map', '0:a',
+        ...encodeArgs,
+      ]
+    }
+
+    // No overlays
+    return [
+      ...baseArgs,
+      '-map', '0:v',
+      '-map', '0:a',
+      ...encodeArgs,
     ]
   }
 
@@ -448,7 +584,11 @@ async function startChannel(channel: Channel) {
   const activeLogos = logos.filter((l) => l.active)
   console.log(`Channel ${channelId}: ${activeLogos.length} active logo(s)`)
 
-  const args = buildFfmpegArgs(channelId, items, settings, activeLogos)
+  const textOverlays = await fetchTextOverlays(channelId)
+  const activeTextOverlays = textOverlays.filter((t) => t.active)
+  console.log(`Channel ${channelId}: ${activeTextOverlays.length} active text overlay(s)`)
+
+  const args = buildFfmpegArgs(channelId, items, settings, activeLogos, activeTextOverlays)
   if (!args) {
     console.error(`Cannot build ffmpeg command for channel ${channelId}`)
     return

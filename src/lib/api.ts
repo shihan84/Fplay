@@ -112,6 +112,14 @@ export const settingsApi = {
     apiFetch<any>(`/settings?channelId=${channelId}`, { method: 'PUT', body: JSON.stringify({ ...data, channelId }) }),
 }
 
+// Text Overlays
+export const textOverlaysApi = {
+  list: (channelId: string) => apiFetch<any[]>(`/text-overlays?channelId=${channelId}`),
+  create: (data: any) => apiFetch<any>('/text-overlays', { method: 'POST', body: JSON.stringify(data) }),
+  update: (data: any) => apiFetch<any>('/text-overlays', { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch<any>(`/text-overlays?id=${id}`, { method: 'DELETE' }),
+}
+
 // Logs
 export const logsApi = {
   list: (params?: { channelId?: string; page?: number; limit?: number; status?: string }) => {

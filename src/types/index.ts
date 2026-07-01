@@ -8,6 +8,7 @@ export type ViewName =
   | 'settings'
   | 'logs'
   | 'overlay'
+  | 'text-overlay'
   | 'recordings'
 
 export interface Channel {
@@ -159,6 +160,33 @@ export interface GraphicsOverlay {
   position: string
   duration: number
   active: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface TextOverlay {
+  id: string
+  channelId: string
+  name: string
+  type: 'static' | 'ticker' | 'clock' | 'lowerthird'
+  active: boolean
+  text: string
+  fontFile: string
+  fontSize: number
+  fontColor: string
+  bgColor: string
+  bgOpacity: number
+  outline: number
+  outlineColor: string
+  posX: string
+  posY: string
+  offsetX: number
+  offsetY: number
+  scrollSpeed: number
+  subText: string
+  subFontSize: number
+  startTime: string
+  endTime: string
   createdAt: string
   updatedAt: string
 }
