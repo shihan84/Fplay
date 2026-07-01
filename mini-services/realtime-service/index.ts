@@ -337,18 +337,16 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
   const audioPid = settings.audioPid ?? 272
   const pmtPid   = settings.pmtPid   ?? 4096
 
-  // For MPEG-TS: use native PID stream args
-  // For RTMP/FLV: embed PIDs in onMetaData header so the RTMP server / player can read them
+  // MPEG-TS: native PID args for DVB/IPTV mux
+  // RTMP/FLV: FLV muxer does NOT support custom AMF key-value pairs — PIDs are a transport-layer
+  // concept that doesn't exist in RTMP. The RTMP server assigns PIDs when re-muxing to MPEG-TS.
+  // For RTMP we store the intended PIDs in the channel settings for documentation/head-end config.
   const pidArgs: string[] = outFormat === 'mpegts'
     ? [
         '-mpegts_pmt_start_pid', String(pmtPid),
         '-mpegts_start_pid',     String(videoPid),
       ]
-    : [
-        '-metadata', `videoPid=${videoPid}`,
-        '-metadata', `audioPid=${audioPid}`,
-        '-metadata', `pmtPid=${pmtPid}`,
-      ]
+    : []  // no PID injection for RTMP/FLV — not supported by FLV muxer
 
   const concatFile = buildPlaylistFile(channelId, items)
 

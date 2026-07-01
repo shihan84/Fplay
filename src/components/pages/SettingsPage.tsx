@@ -517,7 +517,7 @@ export function SettingsPage() {
                   {saving === 'video' ? 'Saving...' : 'Save'}
                 </Button>
               </div>
-              <p className="text-xs text-zinc-500">Program IDs for MPEG-TS streams (IPTV/DVB). Only applied when output format is MPEG-TS.</p>
+              <p className="text-xs text-zinc-500">Program IDs for MPEG-TS/DVB streams. <span className="text-amber-500">Only active when output format is MPEG-TS.</span> Not applicable to RTMP/FLV — RTMP has no PID concept; the CDN/head-end assigns PIDs when re-muxing to MPEG-TS.</p>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-3 gap-4">
