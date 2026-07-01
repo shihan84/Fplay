@@ -178,8 +178,6 @@ export function Dashboard() {
           const logsRes = results[1].value
           if (logsRes?.data) {
             setRecentLogs(logsRes.data)
-          } else if (logsRes?.logs) {
-            setRecentLogs(logsRes.logs)
           }
         }
 
@@ -244,7 +242,6 @@ export function Dashboard() {
         if (results[1].status === 'fulfilled') {
           const logsRes = results[1].value
           if (logsRes?.data) setRecentLogs(logsRes.data)
-          else if (logsRes?.logs) setRecentLogs(logsRes.logs)
         }
         if (results[2].status === 'fulfilled') {
           const mediaCount = results[2].value.reduce((sum: number, ch: any) => sum + (ch._count?.media || 0), 0)

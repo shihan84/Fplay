@@ -7,10 +7,39 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
     const channelId = searchParams.get('channelId')
+    const id = searchParams.get('id')
+
+    if (id) {
+      const playlist = await db.playlist.findUnique({
+        where: { id },
+        include: {
+          items: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      })
+
+      if (!playlist) {
+        return NextResponse.json({ error: 'Playlist not found' }, { status: 404 })
+      }
+
+      const mediaIds = playlist.items.map((item) => item.mediaId)
+      const mediaList = mediaIds.length
+        ? await db.media.findMany({ where: { id: { in: mediaIds } } })
+        : []
+      const mediaById = new Map(mediaList.map((m) => [m.id, m]))
+
+      const items = playlist.items.map((item) => ({
+        ...item,
+        media: mediaById.get(item.mediaId) || null,
+      }))
+
+      return NextResponse.json({ ...playlist, items })
+    }
 
     if (!channelId) {
       return NextResponse.json(
-        { error: 'channelId query parameter is required' },
+        { error: 'channelId or id query parameter is required' },
         { status: 400 }
       )
     }
@@ -26,8 +55,9 @@ export async function GET(request: NextRequest) {
     })
 
     return NextResponse.json(playlists)
-  } catch (error) {
-    console.error('Error fetching playlists:', error)
+  } catch (error: any) {
+    const details = JSON.stringify(error, Object.getOwnPropertyNames(error)).slice(0, 2000)
+    console.error('Error fetching playlists:', error?.constructor?.name, details)
     return NextResponse.json({ error: 'Failed to fetch playlists' }, { status: 500 })
   }
 }
@@ -156,7 +186,7 @@ export async function PATCH(request: NextRequest) {
         const startOrder = existingItems.length > 0 ? (existingItems[0].order + 1) : 0
 
         const createdItems = await db.playlistItem.createMany({
-          data: items.map((item: Record<string, unknown>, index: number) => ({
+          data: items.map((item: Record<string, any>, index: number) => ({
             playlistId,
             mediaId: item.mediaId,
             title: item.title ?? '',

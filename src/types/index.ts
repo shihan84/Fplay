@@ -21,7 +21,7 @@ export interface Channel {
   updatedAt: string
   settings?: ChannelSettings
   playlists?: Playlist[]
-  _count?: { media: number; logs: number; logos: number }
+  _count?: { media: number; logs: number; logos: number; playlists: number }
 }
 
 export interface ChannelSettings {

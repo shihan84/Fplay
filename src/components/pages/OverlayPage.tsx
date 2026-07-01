@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect, useCallback, useMemo } from 'react'
+import { useState, useEffect, useCallback, useMemo, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/stores/app-store'
 import { logosApi, graphicsApi } from '@/lib/api'
@@ -36,7 +36,7 @@ import {
   AlertDialogTrigger,
 } from '@/components/ui/alert-dialog'
 import {
-  Image,
+  Image as ImageIcon,
   Layers,
   Plus,
   Pencil,
@@ -86,18 +86,21 @@ function LogoDialog({
     name: '',
     path: '',
     opacity: 0.8,
-    posX: 'top',
-    posY: 'right',
+    posX: 'right',
+    posY: 'top',
     offsetX: 20,
     offsetY: 20,
     sizeW: 200,
     sizeH: 80,
+    bgColor: '',
     category: '',
     active: true,
     startTime: '',
     endTime: '',
   })
   const [saving, setSaving] = useState(false)
+  const [file, setFile] = useState<File | null>(null)
+  const fileInputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     if (logo) {
@@ -111,6 +114,7 @@ function LogoDialog({
         offsetY: logo.offsetY || 0,
         sizeW: logo.sizeW || 200,
         sizeH: logo.sizeH || 80,
+        bgColor: logo.bgColor || '',
         category: logo.category || '',
         active: logo.active ?? true,
         startTime: logo.startTime || '',
@@ -121,18 +125,20 @@ function LogoDialog({
         name: '',
         path: '',
         opacity: 0.8,
-        posX: 'top',
-        posY: 'right',
+        posX: 'right',
+        posY: 'top',
         offsetX: 20,
         offsetY: 20,
         sizeW: 200,
         sizeH: 80,
+        bgColor: '',
         category: '',
         active: true,
         startTime: '',
         endTime: '',
       })
     }
+    setFile(null)
   }, [logo, open])
 
   const update = (key: string, value: any) => setForm((prev) => ({ ...prev, [key]: value }))
@@ -148,6 +154,22 @@ function LogoDialog({
       if (logo) {
         await logosApi.update(logo.id, payload)
         toast.success('Logo updated')
+      } else if (file) {
+        await logosApi.upload(channelId, file, {
+          name: form.name,
+          opacity: form.opacity,
+          posX: form.posX,
+          posY: form.posY,
+          offsetX: form.offsetX,
+          offsetY: form.offsetY,
+          sizeW: form.sizeW,
+          sizeH: form.sizeH,
+          category: form.category,
+          active: form.active,
+          startTime: form.startTime,
+          endTime: form.endTime,
+        })
+        toast.success('Logo uploaded')
       } else {
         await logosApi.create(payload)
         toast.success('Logo created')
@@ -183,12 +205,32 @@ function LogoDialog({
             <Label className="text-sm text-zinc-300">Path / Upload</Label>
             <div className="flex gap-2">
               <Input
-                value={form.path}
+                value={file ? file.name : form.path}
                 onChange={(e) => update('path', e.target.value)}
                 placeholder="/path/to/logo.png"
                 className="bg-zinc-800 border-zinc-700 text-zinc-200 font-mono text-sm"
+                readOnly={!!file}
               />
-              <Button variant="outline" size="sm" className="shrink-0 border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50">
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => {
+                  const selected = e.target.files?.[0] || null
+                  setFile(selected)
+                  if (selected && !form.name.trim()) {
+                    update('name', selected.name.replace(/\.[^.]+$/, ''))
+                  }
+                }}
+              />
+              <Button
+                variant="outline"
+                size="sm"
+                type="button"
+                className="shrink-0 border-zinc-700 bg-zinc-800/50 text-zinc-300 hover:bg-zinc-700/50"
+                onClick={() => fileInputRef.current?.click()}
+              >
                 Upload
               </Button>
             </div>
@@ -271,6 +313,23 @@ function LogoDialog({
                 value={form.sizeH}
                 onChange={(e) => update('sizeH', parseInt(e.target.value) || 0)}
                 className="bg-zinc-800 border-zinc-700 text-zinc-200"
+              />
+            </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label className="text-sm text-zinc-300">BG Color to Remove <span className="text-zinc-500 text-xs">(JPEG only — pick the background color to key out)</span></Label>
+            <div className="flex gap-2 items-center">
+              <input
+                type="color"
+                value={form.bgColor || '#5e5e5e'}
+                onChange={(e) => update('bgColor', e.target.value)}
+                className="w-10 h-9 rounded border border-zinc-700 bg-zinc-800 cursor-pointer p-0.5"
+              />
+              <Input
+                value={form.bgColor}
+                onChange={(e) => update('bgColor', e.target.value)}
+                placeholder="#5e5e5e (leave blank to skip)"
+                className="bg-zinc-800 border-zinc-700 text-zinc-200 font-mono text-sm"
               />
             </div>
           </div>
@@ -497,6 +556,16 @@ function LogoCard({
         </div>
       </CardHeader>
       <CardContent className="px-4 pt-3 space-y-3">
+        {logo.path && (
+          <div className="flex items-center justify-center h-16 rounded-md bg-zinc-800/60 border border-zinc-700 overflow-hidden">
+            <img
+              src={logo.path}
+              alt={logo.name}
+              className="max-h-full max-w-full object-contain"
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+          </div>
+        )}
         <div className="flex items-center justify-between text-xs text-zinc-500">
           <span>Opacity: {(logo.opacity * 100).toFixed(0)}%</span>
           <span>{logo.sizeW}×{logo.sizeH}</span>
@@ -702,7 +771,7 @@ export function OverlayPage() {
   const handleLogoDialogClose = () => {
     setLogoDialogOpen(false)
     setEditingLogo(null)
-    queryClient.invalidateQueries({ queryKey: ['logos', logoChannelId] })
+    queryClient.invalidateQueries({ queryKey: ['logos', effectiveLogoChannelId] })
   }
 
   const handleGraphicsDialogClose = () => {
@@ -737,7 +806,7 @@ export function OverlayPage() {
       <Tabs defaultValue="logos" className="space-y-6">
         <TabsList className="bg-zinc-800/50">
           <TabsTrigger value="logos" className="gap-1.5 data-[state=active]:bg-zinc-700/50 data-[state=active]:text-zinc-100">
-            <Image className="size-4" />
+            <ImageIcon className="size-4" />
             Logo Overlays
           </TabsTrigger>
           <TabsTrigger value="graphics" className="gap-1.5 data-[state=active]:bg-zinc-700/50 data-[state=active]:text-zinc-100">
@@ -793,7 +862,7 @@ export function OverlayPage() {
           ) : logos.length === 0 ? (
             <Card className="border-zinc-800 bg-zinc-900/60">
               <CardContent className="flex flex-col items-center justify-center py-16">
-                <Image className="size-10 text-zinc-700 mb-3" />
+                <ImageIcon className="size-10 text-zinc-700 mb-3" />
                 <p className="text-zinc-500">No logos configured for this channel</p>
               </CardContent>
             </Card>

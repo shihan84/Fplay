@@ -4,9 +4,12 @@
 FROM oven/bun:1 AS runner
 WORKDIR /app
 
+# Install ffmpeg and wget for the playout engine and healthcheck
+RUN apt-get update && apt-get install -y ffmpeg wget && rm -rf /var/lib/apt/lists/*
+
 # Create non-root user
-RUN addgroup --system --gid 1001 nodejs && \
-    adduser --system --uid 1001 realtime
+RUN groupadd --system --gid 1001 nodejs && \
+    useradd --system --uid 1001 --gid nodejs realtime
 
 COPY package.json bun.lock ./
 RUN bun install --frozen-lockfile --production

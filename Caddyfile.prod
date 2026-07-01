@@ -1,4 +1,4 @@
-{$DOMAIN:localhost} {
+http://{$DOMAIN:localhost} {
 	# Route XTransformPort=3005 to the realtime (Socket.IO) service
 	@realtime_port query XTransformPort=3005
 	handle @realtime_port {
@@ -8,6 +8,18 @@
 			header_up X-Forwarded-Proto {scheme}
 			header_up X-Real-IP {remote_host}
 		}
+	}
+
+	# Serve uploaded media files directly from the shared volume
+	handle_path /media/* {
+		root * /srv/media
+		file_server
+	}
+
+	# Serve uploaded logo files directly from the shared volume
+	handle_path /logos/* {
+		root * /srv/logos
+		file_server
 	}
 
 	# Default: Next.js app

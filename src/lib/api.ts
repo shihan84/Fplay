@@ -10,11 +10,14 @@ export async function apiFetch<T>(
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt++) {
     try {
+      const isFormData = options?.body instanceof FormData
       const res = await fetch(`${API_BASE}${path}`, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options?.headers,
-        },
+        headers: isFormData
+          ? options?.headers
+          : {
+              'Content-Type': 'application/json',
+              ...options?.headers,
+            },
         ...options,
       })
 
@@ -127,6 +130,19 @@ export const logsApi = {
 export const logosApi = {
   list: (channelId: string) => apiFetch<any[]>(`/logos?channelId=${channelId}`),
   create: (data: any) => apiFetch<any>('/logos', { method: 'POST', body: JSON.stringify(data) }),
+  upload: (channelId: string, file: File, data?: any) => {
+    const formData = new FormData()
+    formData.append('file', file)
+    formData.append('channelId', channelId)
+    if (data) {
+      Object.entries(data).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          formData.append(key, String(value))
+        }
+      })
+    }
+    return apiFetch<any>('/logos', { method: 'POST', body: formData })
+  },
   update: (id: string, data: any) => apiFetch<any>(`/logos?id=${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   delete: (id: string) => apiFetch<void>(`/logos?id=${id}`, { method: 'DELETE' }),
 }

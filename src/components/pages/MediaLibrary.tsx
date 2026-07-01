@@ -192,6 +192,9 @@ export function MediaLibrary() {
 
   const uploadMutation = useMutation({
     mutationFn: async (data: { file?: File; category: string; tags: string }) => {
+      const fileName = data.file?.name
+      const fileType = data.file?.type
+      const fileSize = data.file?.size
       if (data.file) {
         const formData = new FormData()
         formData.append('file', data.file)
@@ -204,11 +207,11 @@ export function MediaLibrary() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          filename: data.file?.name || 'uploaded-file.mp4',
-          title: data.file?.name?.replace(/\.[^.]+$/, '') || 'Uploaded File',
-          path: `/media/${data.file?.name || 'uploaded-file.mp4'}`,
-          fileType: data.file?.type?.startsWith('audio') ? 'audio' : 'video',
-          fileSize: data.file?.size || 0,
+          filename: fileName || 'uploaded-file.mp4',
+          title: fileName?.replace(/\.[^.]+$/, '') || 'Uploaded File',
+          path: `/media/${fileName || 'uploaded-file.mp4'}`,
+          fileType: fileType?.startsWith('audio') ? 'audio' : 'video',
+          fileSize: fileSize || 0,
           duration: 0,
           category: data.category || null,
           tags: data.tags || null,

@@ -89,6 +89,7 @@ model Media {
   updatedAt   DateTime @updatedAt
 
   channelLinks ChannelMedia[]
+  playlistItems PlaylistItem[]
 }
 
 model ChannelMedia {
@@ -121,6 +122,7 @@ model PlaylistItem {
   playlistId  String
   playlist    Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
   mediaId     String
+  media       Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
   title       String
   artist      String?
   duration    Float    @default(0)
@@ -166,6 +168,7 @@ model LogoOverlay {
   sizeW     Int     @default(200)
   sizeH     Int     @default(0) // 0 = auto
   active    Boolean @default(true)
+  bgColor   String?  // hex color to key out (e.g. #5e5e5e) for JPEG logos
   category  String?
   startTime String?  // HH:MM:SS - when to show
   endTime   String?  // HH:MM:SS - when to hide

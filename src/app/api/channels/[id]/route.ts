@@ -105,7 +105,18 @@ export async function PATCH(
   try {
     const { id } = await params
     const body = await request.json()
-    const { action } = body
+    const { action, status } = body
+
+    if (status && typeof status === 'string') {
+      const channel = await db.channel.update({
+        where: { id },
+        data: { status },
+      })
+      return NextResponse.json({
+        ...channel,
+        message: `Channel status updated to ${status}`,
+      })
+    }
 
     if (!action || !['start', 'stop', 'restart'].includes(action)) {
       return NextResponse.json(

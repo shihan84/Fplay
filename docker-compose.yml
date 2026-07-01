@@ -12,14 +12,16 @@ services:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/custom.db
       - PORT=3000
+      - REALTIME_CONTROL_URL=http://realtime:3006
     volumes:
       - app-data:/data          # SQLite database persistence
-      - app-media:/app/media    # Media files storage
+      - app-media:/app/public/media    # Media files storage
+      - app-logos:/app/public/logos    # Logo overlay files storage
       - app-recordings:/app/recordings  # Conformance recordings
     expose:
       - "3000"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/system"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/api/system"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -38,10 +40,18 @@ services:
     restart: unless-stopped
     environment:
       - PORT=3005
+      - CONTROL_PORT=3006
+      - APP_API_URL=http://app:3000/api
+      - MEDIA_DIR=/srv/media
+      - LOGOS_DIR=/srv/logos
+    volumes:
+      - app-media:/srv/media:ro
+      - app-logos:/srv/logos:ro
     expose:
       - "3005"
+      - "3006"
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3005/socket.io/?EIO=4&transport=polling"]
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3005/socket.io/?EIO=4&transport=polling"]
       interval: 30s
       timeout: 10s
       retries: 3
@@ -63,6 +73,8 @@ services:
       - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
       - caddy-data:/data
       - caddy-config:/config
+      - app-media:/srv/media:ro
+      - app-logos:/srv/logos:ro
     depends_on:
       app:
         condition: service_healthy
@@ -75,6 +87,8 @@ volumes:
   app-data:
     driver: local
   app-media:
+    driver: local
+  app-logos:
     driver: local
   app-recordings:
     driver: local

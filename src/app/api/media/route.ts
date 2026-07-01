@@ -1,7 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
+import fs from 'fs/promises'
+import path from 'path'
 import { db } from '@/lib/db'
 
 export const dynamic = 'force-dynamic'
+
+const UPLOAD_DIR = '/app/public/media'
+
+function sanitizeFileName(name: string) {
+  return name.replace(/[^a-zA-Z0-9.-]/g, '_')
+}
+
+function fileTypeFromMime(type: string) {
+  if (type.startsWith('audio/')) return 'audio'
+  if (type.startsWith('image/')) return 'image'
+  return 'video'
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -64,14 +78,51 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const contentType = request.headers.get('content-type') || ''
+
+    if (contentType.includes('multipart/form-data')) {
+      const formData = await request.formData()
+      const file = formData.get('file') as File | null
+      const category = formData.get('category') as string | null
+      const tags = formData.get('tags') as string | null
+
+      if (!file) {
+        return NextResponse.json({ error: 'No file provided' }, { status: 400 })
+      }
+
+      await fs.mkdir(UPLOAD_DIR, { recursive: true })
+
+      const safeName = sanitizeFileName(file.name)
+      const uniqueName = `${Date.now()}_${safeName}`
+      const destPath = path.join(UPLOAD_DIR, uniqueName)
+      const bytes = await file.arrayBuffer()
+      await fs.writeFile(destPath, Buffer.from(bytes))
+
+      const media = await db.media.create({
+        data: {
+          filename: file.name,
+          title: file.name.replace(/\.[^.]+$/, ''),
+          path: `/media/${uniqueName}`,
+          fileType: fileTypeFromMime(file.type),
+          fileSize: file.size,
+          duration: 0,
+          category: category || null,
+          tags: tags || null,
+          status: 'ready',
+        },
+      })
+
+      return NextResponse.json(media, { status: 201 })
+    }
+
     const body = await request.json()
     const {
-      filename, title, path, fileType, fileSize, duration,
+      filename, title, path: mediaPath, fileType, fileSize, duration,
       resolution, codec, bitrate, frameRate, sampleRate,
       channels, category, tags, thumbnail, status,
     } = body
 
-    if (!filename || !path) {
+    if (!filename || !mediaPath) {
       return NextResponse.json(
         { error: 'filename and path are required' },
         { status: 400 }
@@ -82,7 +133,7 @@ export async function POST(request: NextRequest) {
       data: {
         filename,
         title: title ?? null,
-        path,
+        path: mediaPath,
         fileType: fileType ?? 'video',
         fileSize: fileSize ?? 0,
         duration: duration ?? 0,
