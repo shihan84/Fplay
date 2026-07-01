@@ -449,8 +449,8 @@ async function startChannel(channel: Channel) {
     const shouldRestart = settings.autoRecover !== false && (channel.status === 'running' || channel.status === 'starting') && !reloadingChannels.has(channelId)
     if (shouldRestart) {
       console.warn(`Restarting channel ${channelId} (autoRecover)`)
-      await updateChannelStatus(channelId, 'starting')
-      // Brief delay before restart
+      // Do NOT write 'starting' to DB — it causes frontend to flicker stopped→starting.
+      // Just reschedule syncChannels which will restart ffmpeg silently.
       setTimeout(() => syncChannels(), 2000)
     } else {
       await updateChannelStatus(channelId, 'stopped')

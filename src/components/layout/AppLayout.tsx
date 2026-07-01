@@ -32,8 +32,12 @@ export function AppLayout() {
   // Listen for real-time channel status updates
   const handleChannelStatus = useCallback((data: ChannelStatus) => {
     updateChannelStatus(data)
-    // Also update channel status in the channels list
-    useAppStore.getState().updateChannel(data.channelId, { status: data.status })
+    // Only propagate stable statuses to the channels list.
+    // Skip 'starting' — it is transient and causes dashboard badge flickering
+    // during autoRecover restarts while the stream is actually continuous.
+    if (data.status !== 'starting') {
+      useAppStore.getState().updateChannel(data.channelId, { status: data.status })
+    }
   }, [updateChannelStatus])
 
   useEffect(() => {
