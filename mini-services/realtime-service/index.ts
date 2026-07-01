@@ -364,9 +364,11 @@ function buildTextFilter(overlays: TextOverlay[], width: number, height: number)
   const { existsSync } = require('fs')
   const DEFAULT_FONT = FONTS.find(existsSync) || FONTS[FONTS.length - 1]
 
-  // Escape text for FFmpeg drawtext when passed via spawn args array (no shell)
-  // Rules: escape \ → \\, escape : → \:, escape ' → \', no surrounding quotes needed
-  const escText = (t: string) => t.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/:/g, '\\:')
+  // FFmpeg filter-string quoting — wrap text in single quotes (FFmpeg's own quoting, not shell)
+  // Inside FFmpeg single-quoted strings: escape ' as \' and \ as \\
+  // This is required for %{expr} expansions and any text with special chars
+  // Works correctly when passed as a spawn array element (no shell interpretation)
+  const escText = (t: string) => `'${t.replace(/\\/g, '\\\\').replace(/'/g, "\\'")}'`
 
   active.forEach((o) => {
     const fontPath = o.fontFile || DEFAULT_FONT
@@ -409,10 +411,11 @@ function buildTextFilter(overlays: TextOverlay[], width: number, height: number)
         `x=w-mod(t*${speed}\\,w+tw):y=${tickerY}`
       )
     } else if (o.type === 'clock') {
-      // Live clock — %{localtime\:fmt} syntax, colons in format must be escaped as \: for spawn
-      // When passed as array element to spawn, single backslash is needed in the string
+      // Live clock — FFmpeg filter-string quoting: text='%{localtime\:%H\:%M\:%S}'
+      // Single quotes are FFmpeg's own filter quoting (not shell). Colons inside %{} are \:
+      // Verified working via spawn array (no shell) on FFmpeg 6.x+
       filters.push(
-        `drawtext=${font}text=%{localtime\\:%H\\:%M\\:%S}:` +
+        `drawtext=${font}text='%{localtime\\:%H\\:%M\\:%S}':` +
         `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
         `x=${x}:y=${y}`
       )
