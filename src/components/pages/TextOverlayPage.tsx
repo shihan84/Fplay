@@ -81,6 +81,17 @@ function OverlayForm({
 }) {
   const qc = useQueryClient()
   const [form, setForm] = useState<Partial<TextOverlay>>(initial ?? defaultForm())
+  const [fontSearch, setFontSearch] = useState('')
+
+  const { data: fontList = [] } = useQuery<{ name: string; file: string; style: string }[]>({
+    queryKey: ['fonts'],
+    queryFn: () => fetch('/api/fonts').then(r => r.json()),
+    staleTime: 3600_000,
+  })
+
+  const filteredFonts = fontSearch
+    ? fontList.filter(f => f.name.toLowerCase().includes(fontSearch.toLowerCase()))
+    : fontList
 
   const set = <K extends keyof TextOverlay>(k: K, v: TextOverlay[K]) =>
     setForm((f) => ({ ...f, [k]: v }))
@@ -155,7 +166,39 @@ function OverlayForm({
         </div>
       )}
 
-      {/* Font */}
+      {/* Font family picker */}
+      <div className="space-y-1.5">
+        <Label className="text-sm text-zinc-300">Font Family</Label>
+        <div className="flex gap-2">
+          <Input
+            value={fontSearch}
+            onChange={(e) => setFontSearch(e.target.value)}
+            placeholder="Search fonts..."
+            className="bg-zinc-800 border-zinc-700 text-zinc-200 w-48"
+          />
+          <Select
+            value={form.fontFile ?? ''}
+            onValueChange={(v) => { set('fontFile', v); setFontSearch('') }}
+          >
+            <SelectTrigger className="flex-1 bg-zinc-800 border-zinc-700 text-zinc-200">
+              <SelectValue placeholder="Default (Liberation Sans Bold)" />
+            </SelectTrigger>
+            <SelectContent className="max-h-60">
+              <SelectItem value="">Default (Liberation Sans Bold)</SelectItem>
+              {filteredFonts.map((f) => (
+                <SelectItem key={f.file} value={f.file}>
+                  {f.name}{f.style && f.style !== 'Regular' ? ` — ${f.style}` : ''}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+        {form.fontFile && (
+          <p className="text-xs text-zinc-500 truncate">{form.fontFile}</p>
+        )}
+      </div>
+
+      {/* Font size + color */}
       <div className="grid grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm text-zinc-300">Font Size</Label>

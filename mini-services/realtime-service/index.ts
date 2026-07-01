@@ -1,5 +1,5 @@
 import { Server } from 'socket.io'
-import { spawn, type ChildProcess } from 'node:child_process'
+import { spawn, spawnSync, type ChildProcess } from 'node:child_process'
 import { existsSync, mkdirSync, writeFileSync, unlinkSync } from 'node:fs'
 import { basename, join } from 'node:path'
 import { createServer } from 'node:http'
@@ -353,15 +353,17 @@ function buildTextFilter(overlays: TextOverlay[], width: number, height: number)
 
   const filters: string[] = []
 
-  // Font priority: Liberation Sans (clean broadcast look) → DejaVu Bold → DejaVu
-  // Explicit fontfile bypasses fontconfig entirely — required in Docker containers
+  // Font priority: Liberation Sans → Noto Sans → DejaVu Bold
+  // Explicit fontfile bypasses fontconfig cache errors in Docker
   const FONTS = [
     '/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf',
     '/usr/share/fonts/truetype/liberation2/LiberationSans-Bold.ttf',
+    '/usr/share/fonts/truetype/noto/NotoSans-Bold.ttf',
+    '/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf',
+    '/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf',
     '/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf',
   ]
-  const { existsSync } = require('fs')
   const DEFAULT_FONT = FONTS.find(existsSync) || FONTS[FONTS.length - 1]
 
   // FFmpeg filter-string quoting — wrap text in single quotes (FFmpeg's own quoting, not shell)
@@ -893,6 +895,25 @@ async function reloadChannel(channelId: string) {
 
 const CONTROL_PORT = process.env.CONTROL_PORT || 3006
 
+// Build font list once at startup using fc-list
+type FontEntry = { name: string; file: string; style: string }
+let _fontList: FontEntry[] | null = null
+function listFonts(): FontEntry[] {
+  if (_fontList) return _fontList
+  try {
+    const result = spawnSync('fc-list', ['--format=%{family}\t%{file}\t%{style}\n'], { encoding: 'utf8' })
+    const lines = result.stdout?.split('\n').filter(Boolean) || []
+    _fontList = lines.map(line => {
+      const [name, file, style] = line.split('\t')
+      return { name: (name || '').trim(), file: (file || '').trim(), style: (style || '').trim() }
+    }).filter(f => f.file.endsWith('.ttf') || f.file.endsWith('.otf') || f.file.endsWith('.ttc'))
+      .sort((a, b) => a.name.localeCompare(b.name))
+  } catch {
+    _fontList = []
+  }
+  return _fontList
+}
+
 const controlServer = createServer((req, res) => {
   const match = req.url?.match(/^\/reload\/([^/?]+)$/)
   if (req.method === 'POST' && match) {
@@ -902,6 +923,12 @@ const controlServer = createServer((req, res) => {
     reloadChannel(channelId).catch((err) =>
       console.error(`reloadChannel error for ${channelId}:`, err)
     )
+    return
+  }
+  if (req.method === 'GET' && req.url === '/fonts') {
+    const fonts = listFonts()
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' })
+    res.end(JSON.stringify(fonts))
     return
   }
   res.writeHead(404)
