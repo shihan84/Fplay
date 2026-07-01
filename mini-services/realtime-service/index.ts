@@ -624,32 +624,53 @@ setInterval(syncChannels, 5000)
 
 // ─── Channel Reload (for logo/overlay changes) ───────────────────────────────
 
+const pendingReload: Set<string> = new Set()
+
 async function reloadChannel(channelId: string) {
-  const proc = ffmpegProcesses.get(channelId)
-  if (!proc) {
-    console.log(`reloadChannel: channel ${channelId} not running, skipping`)
+  // If already mid-reload, mark a pending reload so it re-runs after current finishes
+  if (reloadingChannels.has(channelId)) {
+    console.log(`reloadChannel: channel ${channelId} already reloading, queuing another reload`)
+    pendingReload.add(channelId)
     return
   }
+
   reloadingChannels.add(channelId)
-  console.log(`Reloading ffmpeg for channel ${channelId} — stopping process...`)
-  proc.kill('SIGTERM')
-  ffmpegProcesses.delete(channelId)
 
-  // Give SIGTERM 2s to cleanly exit, then force-kill if still alive
-  await new Promise((r) => setTimeout(r, 2000))
-  try { proc.kill('SIGKILL') } catch { /* already dead */ }
+  const proc = ffmpegProcesses.get(channelId)
+  if (proc) {
+    console.log(`Reloading ffmpeg for channel ${channelId} — stopping process...`)
+    proc.kill('SIGTERM')
+    ffmpegProcesses.delete(channelId)
 
-  // Full 5s total stop window so RTMP server releases the stream slot
-  console.log(`Waiting 5s before restarting channel ${channelId}...`)
-  await new Promise((r) => setTimeout(r, 3000))
+    // Give SIGTERM 2s to cleanly exit, then force-kill if still alive
+    await new Promise((r) => setTimeout(r, 2000))
+    try { proc.kill('SIGKILL') } catch { /* already dead */ }
 
-  reloadingChannels.delete(channelId)
+    // Full 5s total stop window so RTMP server releases the stream slot
+    console.log(`Waiting 5s before restarting channel ${channelId}...`)
+    await new Promise((r) => setTimeout(r, 3000))
+  } else {
+    console.log(`reloadChannel: channel ${channelId} not running, will start fresh`)
+    // Still wait briefly so any in-flight DB write from the PUT handler is committed
+    await new Promise((r) => setTimeout(r, 1000))
+  }
 
+  // Fetch fresh channel + logo data AFTER the wait so DB changes are visible
   const channels = await fetchChannels()
   const channel = channels.find((c) => c.id === channelId)
   if (channel && (channel.status === 'running' || channel.status === 'starting')) {
     console.log(`Restarting ffmpeg for channel ${channelId}`)
     await startChannel(channel)
+  }
+
+  // Release lock only after startChannel completes (prevents syncChannels race)
+  reloadingChannels.delete(channelId)
+
+  // If another reload was requested while we were busy, run it now
+  if (pendingReload.has(channelId)) {
+    pendingReload.delete(channelId)
+    console.log(`Running queued reload for channel ${channelId}`)
+    reloadChannel(channelId).catch(console.error)
   }
 }
 
