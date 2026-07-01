@@ -97,6 +97,7 @@ type Playlist = {
 const channelStatuses: Map<string, any> = new Map()
 const ffmpegProcesses: Map<string, ChildProcess> = new Map()
 const reloadingChannels: Set<string> = new Set()
+const crashCounts: Map<string, { count: number; lastStart: number }> = new Map()
 const systemStats = {
   cpuUsage: 0,
   memoryUsage: 0,
@@ -454,20 +455,43 @@ async function startChannel(channel: Channel) {
     console.log(`ffmpeg for channel ${channelId} exited with code ${code}`)
     ffmpegProcesses.delete(channelId)
 
-    const shouldRestart = settings.autoRecover !== false && (channel.status === 'running' || channel.status === 'starting') && !reloadingChannels.has(channelId)
-    if (shouldRestart) {
-      console.warn(`Restarting channel ${channelId} (autoRecover)`)
-      // Do NOT write 'starting' to DB — it causes frontend to flicker stopped→starting.
-      // Just reschedule syncChannels which will restart ffmpeg silently.
-      setTimeout(() => syncChannels(), 2000)
+    // Track crash frequency — if ffmpeg dies within 15s repeatedly, it's a config error
+    const crash = crashCounts.get(channelId) || { count: 0, lastStart: 0 }
+    const uptime = Date.now() - crash.lastStart
+    if (uptime < 15000) {
+      crash.count++
     } else {
-      await updateChannelStatus(channelId, 'stopped')
+      crash.count = 0  // ran long enough — reset
+    }
+    crashCounts.set(channelId, crash)
+
+    const MAX_CRASHES = 3
+    const shouldRestart = settings.autoRecover !== false
+      && (channel.status === 'running' || channel.status === 'starting')
+      && !reloadingChannels.has(channelId)
+      && crash.count < MAX_CRASHES
+
+    if (shouldRestart) {
+      const delay = Math.min(2000 * Math.pow(2, crash.count), 30000)
+      console.warn(`Restarting channel ${channelId} (autoRecover, attempt ${crash.count + 1}, delay ${delay}ms)`)
+      setTimeout(() => syncChannels(), delay)
+    } else {
+      if (crash.count >= MAX_CRASHES) {
+        console.error(`Channel ${channelId} crashed ${crash.count} times quickly — stopping autoRecover. Fix the output URL/settings then restart manually.`)
+        await updateChannelStatus(channelId, 'error')
+      } else {
+        await updateChannelStatus(channelId, 'stopped')
+      }
     }
 
     const status = channelStatuses.get(channelId) || {}
     status.status = shouldRestart ? 'starting' : code === 0 ? 'stopped' : 'error'
     io.emit('channel:status', { channelId, ...status })
   })
+
+  // Record start time for crash-rate tracking
+  const existing = crashCounts.get(channelId) || { count: 0, lastStart: 0 }
+  crashCounts.set(channelId, { ...existing, lastStart: Date.now() })
 
   // Update the realtime service UI state
   const startedAt = Date.now()
@@ -635,6 +659,7 @@ async function reloadChannel(channelId: string) {
   }
 
   reloadingChannels.add(channelId)
+  crashCounts.delete(channelId)  // reset crash counter on manual reload
 
   const proc = ffmpegProcesses.get(channelId)
   if (proc) {
