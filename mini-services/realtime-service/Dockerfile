@@ -14,7 +14,6 @@ RUN apt-get update && apt-get install -y \
     fonts-liberation2 \
     fonts-freefont-ttf \
     fonts-open-sans \
-    fonts-ubuntu \
     # Noto — covers 1000+ scripts/languages (Arabic, Hebrew, Devanagari,
     # Bengali, Tamil, Telugu, Kannada, Malayalam, Sinhala, Thai, Khmer,
     # Myanmar, Georgian, Armenian, Ethiopic, Tibetan, etc.)
@@ -37,7 +36,6 @@ RUN apt-get update && apt-get install -y \
     fonts-lohit-knda \
     fonts-lohit-orya \
     fonts-lohit-gujr \
-    fonts-kacst \
     fonts-arabeyes \
     fonts-hosny-amiri \
     fonts-culmus \
