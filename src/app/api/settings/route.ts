@@ -86,6 +86,14 @@ export async function PUT(request: NextRequest) {
       },
     })
 
+    // Trigger FFmpeg reload so new settings take effect immediately
+    const controlUrl = process.env.REALTIME_CONTROL_URL
+    if (controlUrl) {
+      fetch(`${controlUrl}/reload/${channelId}`, { method: 'POST' }).catch((err) =>
+        console.warn('Failed to trigger channel reload after settings update:', err)
+      )
+    }
+
     return NextResponse.json(settings)
   } catch (error) {
     console.error('Error upserting settings:', error)
