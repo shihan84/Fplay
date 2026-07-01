@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useAppStore } from '@/stores/app-store'
 import { textOverlaysApi } from '@/lib/api'
@@ -359,10 +359,17 @@ function OverlayForm({
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 export function TextOverlayPage() {
-  const { selectedChannelId, channels } = useAppStore()
+  const { selectedChannelId, setSelectedChannel, channels } = useAppStore()
   const qc = useQueryClient()
   const [dialogOpen, setDialogOpen] = useState(false)
   const [editing, setEditing] = useState<TextOverlay | null>(null)
+
+  // Auto-select first channel if none selected
+  useEffect(() => {
+    if (!selectedChannelId && channels.length > 0) {
+      setSelectedChannel(channels[0].id)
+    }
+  }, [channels, selectedChannelId, setSelectedChannel])
 
   const channelId = selectedChannelId ?? ''
   const channel = channels.find((c) => c.id === channelId)
@@ -402,20 +409,36 @@ export function TextOverlayPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between gap-4 flex-wrap">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100">Text Overlays</h1>
-          <p className="text-sm text-zinc-500 mt-0.5">
-            {channel?.name} — scrolling tickers, static text, live clock, lower thirds
-          </p>
+          <p className="text-sm text-zinc-500 mt-0.5">Scrolling tickers, static text, live clock, lower thirds</p>
         </div>
-        <Button
-          onClick={openCreate}
-          className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
-        >
-          <Plus className="size-4" />
-          Add Overlay
-        </Button>
+        <div className="flex items-center gap-3">
+          <Select value={channelId} onValueChange={setSelectedChannel}>
+            <SelectTrigger className="w-48 bg-zinc-900 border-zinc-700 text-zinc-200">
+              <SelectValue placeholder="Select channel" />
+            </SelectTrigger>
+            <SelectContent>
+              {channels.map((ch) => (
+                <SelectItem key={ch.id} value={ch.id}>
+                  <div className="flex items-center gap-2">
+                    <div className="size-2 rounded-full" style={{ backgroundColor: ch.color }} />
+                    {ch.name}
+                  </div>
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          <Button
+            onClick={openCreate}
+            disabled={!channelId}
+            className="bg-emerald-600 hover:bg-emerald-700 text-white gap-2"
+          >
+            <Plus className="size-4" />
+            Add Overlay
+          </Button>
+        </div>
       </div>
 
       {/* Type guide cards */}
