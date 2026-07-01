@@ -655,12 +655,21 @@ async function reloadChannel(channelId: string) {
     await new Promise((r) => setTimeout(r, 1000))
   }
 
-  // Fetch fresh channel + logo data AFTER the wait so DB changes are visible
+  // Fetch fresh channel + logo data AFTER the wait so DB changes are visible.
+  // Do NOT gate on channel.status — DB may be stale (e.g. shows 'stopped' after SIGTERM).
+  // reloadChannel is only ever called when the stream was running, so always restart.
   const channels = await fetchChannels()
   const channel = channels.find((c) => c.id === channelId)
-  if (channel && (channel.status === 'running' || channel.status === 'starting')) {
+  if (channel) {
     console.log(`Restarting ffmpeg for channel ${channelId}`)
+    // Ensure DB status is 'running' — it may be 'stopped' if SIGTERM updated it
+    if (channel.status !== 'running' && channel.status !== 'starting') {
+      await updateChannelStatus(channelId, 'running')
+      channel.status = 'running'
+    }
     await startChannel(channel)
+  } else {
+    console.warn(`reloadChannel: channel ${channelId} not found in DB, cannot restart`)
   }
 
   // Release lock only after startChannel completes (prevents syncChannels race)
