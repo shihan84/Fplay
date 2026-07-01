@@ -163,10 +163,9 @@ export function MediaLibrary() {
   // ─── Data fetching ───────────────────────────────────────────────────────
 
   const { data: mediaList = [], isLoading } = useQuery<Media[]>({
-    queryKey: ['media', selectedChannelId, searchQuery, categoryFilter, fileTypeFilter],
+    queryKey: ['media', searchQuery, categoryFilter, fileTypeFilter],
     queryFn: () =>
       mediaApi.list({
-        channelId: selectedChannelId ?? undefined,
         search: searchQuery || undefined,
         category: categoryFilter !== 'all' ? categoryFilter : undefined,
       }),
