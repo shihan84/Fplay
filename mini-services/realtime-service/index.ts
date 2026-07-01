@@ -96,6 +96,7 @@ type Playlist = {
 
 const channelStatuses: Map<string, any> = new Map()
 const ffmpegProcesses: Map<string, ChildProcess> = new Map()
+const reloadingChannels: Set<string> = new Set()
 const systemStats = {
   cpuUsage: 0,
   memoryUsage: 0,
@@ -445,7 +446,7 @@ async function startChannel(channel: Channel) {
     console.log(`ffmpeg for channel ${channelId} exited with code ${code}`)
     ffmpegProcesses.delete(channelId)
 
-    const shouldRestart = settings.autoRecover !== false && (channel.status === 'running' || channel.status === 'starting')
+    const shouldRestart = settings.autoRecover !== false && (channel.status === 'running' || channel.status === 'starting') && !reloadingChannels.has(channelId)
     if (shouldRestart) {
       console.warn(`Restarting channel ${channelId} (autoRecover)`)
       await updateChannelStatus(channelId, 'starting')
@@ -509,7 +510,7 @@ async function syncChannels() {
       const shouldRun = channel.status === 'starting' || channel.status === 'running'
       const isRunning = ffmpegProcesses.has(channel.id)
 
-      if (shouldRun && !isRunning) {
+      if (shouldRun && !isRunning && !reloadingChannels.has(channel.id)) {
         await startChannel(channel)
       } else if (!shouldRun && isRunning) {
         stopChannel(channel.id)
@@ -621,16 +622,25 @@ async function reloadChannel(channelId: string) {
     console.log(`reloadChannel: channel ${channelId} not running, skipping`)
     return
   }
-  console.log(`Reloading ffmpeg for channel ${channelId} (overlay change)`)
+  reloadingChannels.add(channelId)
+  console.log(`Reloading ffmpeg for channel ${channelId} — stopping process...`)
   proc.kill('SIGTERM')
   ffmpegProcesses.delete(channelId)
 
-  // Wait briefly then restart
-  await new Promise((r) => setTimeout(r, 1500))
+  // Give SIGTERM 2s to cleanly exit, then force-kill if still alive
+  await new Promise((r) => setTimeout(r, 2000))
+  try { proc.kill('SIGKILL') } catch { /* already dead */ }
+
+  // Full 5s total stop window so RTMP server releases the stream slot
+  console.log(`Waiting 5s before restarting channel ${channelId}...`)
+  await new Promise((r) => setTimeout(r, 3000))
+
+  reloadingChannels.delete(channelId)
 
   const channels = await fetchChannels()
   const channel = channels.find((c) => c.id === channelId)
   if (channel && (channel.status === 'running' || channel.status === 'starting')) {
+    console.log(`Restarting ffmpeg for channel ${channelId}`)
     await startChannel(channel)
   }
 }
