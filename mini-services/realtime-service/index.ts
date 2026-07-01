@@ -411,11 +411,11 @@ function buildTextFilter(overlays: TextOverlay[], width: number, height: number)
         `x=w-mod(t*${speed}\\,w+tw):y=${tickerY}`
       )
     } else if (o.type === 'clock') {
-      // Live clock — FFmpeg filter-string quoting: text='%{localtime\:%H\:%M\:%S}'
-      // Single quotes are FFmpeg's own filter quoting (not shell). Colons inside %{} are \:
-      // Verified working via spawn array (no shell) on FFmpeg 6.x+
+      // Live clock — %{localtime\:fmt} where fmt uses hyphens not colons
+      // Colons inside %{} are treated as argument separators and cannot be further escaped.
+      // %H-%M-%S displays as HH-MM-SS; verified clean (no warnings) via spawn array tests.
       filters.push(
-        `drawtext=${font}text='%{localtime\\:%H\\:%M\\:%S}':` +
+        `drawtext=${font}text='%{localtime\\:%H-%M-%S}':` +
         `fontsize=${fs}:fontcolor=${color}:borderw=${outline}:bordercolor=${outlineColor}:` +
         `x=${x}:y=${y}`
       )

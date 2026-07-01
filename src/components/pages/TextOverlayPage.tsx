@@ -136,7 +136,7 @@ function OverlayForm({
         <Input
           value={form.text ?? ''}
           onChange={(e) => set('text', e.target.value)}
-          placeholder={form.type === 'clock' ? 'Clock auto-generates HH:MM:SS' : 'Enter text...'}
+          placeholder={form.type === 'clock' ? 'Auto-generates live time as HH-MM-SS' : 'Enter text...'}
           disabled={form.type === 'clock'}
           className="bg-zinc-800 border-zinc-700 text-zinc-200 disabled:opacity-50"
         />
