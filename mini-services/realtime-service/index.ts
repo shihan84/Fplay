@@ -333,11 +333,22 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
   const audioSampleRate = settings.audioSampleRate || 44100
   const audioChannels = settings.audioChannels || 2
 
-  // MPEG-TS PID args — only injected when output format is mpegts
-  const pidArgs: string[] = outFormat === 'mpegts' ? [
-    '-mpegts_pmt_start_pid', String(settings.pmtPid ?? 4096),
-    '-mpegts_start_pid',     String(settings.videoPid ?? 256),
-  ] : []
+  const videoPid = settings.videoPid ?? 256
+  const audioPid = settings.audioPid ?? 272
+  const pmtPid   = settings.pmtPid   ?? 4096
+
+  // For MPEG-TS: use native PID stream args
+  // For RTMP/FLV: embed PIDs in onMetaData header so the RTMP server / player can read them
+  const pidArgs: string[] = outFormat === 'mpegts'
+    ? [
+        '-mpegts_pmt_start_pid', String(pmtPid),
+        '-mpegts_start_pid',     String(videoPid),
+      ]
+    : [
+        '-metadata', `videoPid=${videoPid}`,
+        '-metadata', `audioPid=${audioPid}`,
+        '-metadata', `pmtPid=${pmtPid}`,
+      ]
 
   const concatFile = buildPlaylistFile(channelId, items)
 
