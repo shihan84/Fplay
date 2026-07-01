@@ -325,8 +325,8 @@ function buildFfmpegArgs(channelId: string, items: PlaylistItem[], settings: Cha
   const width = settings.width || 1280
   const height = settings.height || 720
   const fps = settings.fps || 25
-  const videoBitrate = settings.videoBitrate || 1000
-  const audioBitrate = settings.audioBitrate || 128
+  const videoBitrate = settings.videoBitrate || 1800
+  const audioBitrate = settings.audioBitrate || 128  // 128k default
   const audioSampleRate = settings.audioSampleRate || 44100
   const audioChannels = settings.audioChannels || 2
 
