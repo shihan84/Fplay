@@ -18,7 +18,8 @@ const viewLabels: Record<string, string> = {
   settings: 'Settings',
   logs: 'As-Run Logs',
   overlay: 'Graphics & Overlays',
-  recordings: 'Conformance Recordings',
+  'text-overlay': 'Text Overlays',
+  domains: 'Domains & SSL',
 }
 
 export function AppHeader({ connected }: { connected: boolean }) {

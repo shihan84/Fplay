@@ -4,7 +4,7 @@ import { useEffect, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Radio, FolderOpen, ListVideo, Play,
-  Layers, Settings, FileText, HardDrive, Tv, ChevronLeft,
+  Layers, Settings, FileText, Globe, Tv, ChevronLeft,
   PanelLeftClose, PanelLeft, Type
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -25,7 +25,7 @@ const navItems: { view: ViewName; label: string; icon: React.ElementType }[] = [
   { view: 'text-overlay', label: 'Text Overlays', icon: Type },
   { view: 'settings', label: 'Settings', icon: Settings },
   { view: 'logs', label: 'As-Run Logs', icon: FileText },
-  { view: 'recordings', label: 'Recordings', icon: HardDrive },
+  { view: 'domains', label: 'Domains & SSL', icon: Globe },
 ]
 
 const statusColors: Record<string, string> = {

@@ -165,12 +165,13 @@ export const graphicsApi = {
     apiFetch<any>(`/graphics?id=${id}`, { method: 'PATCH', body: JSON.stringify({ action: 'trigger' }) }),
 }
 
-// Recordings
-export const recordingsApi = {
-  list: (channelId?: string) => {
-    const query = channelId ? `?channelId=${channelId}` : ''
-    return apiFetch<any[]>(`/recordings${query}`)
-  },
+// Domains & SSL
+export const domainsApi = {
+  list: () => apiFetch<any[]>('/domains'),
+  create: (data: any) => apiFetch<any>('/domains', { method: 'POST', body: JSON.stringify(data) }),
+  update: (id: string, data: any) => apiFetch<any>(`/domains?id=${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  delete: (id: string) => apiFetch<void>(`/domains?id=${id}`, { method: 'DELETE' }),
+  reload: () => apiFetch<any>('/domains/reload', { method: 'POST' }),
 }
 
 // System

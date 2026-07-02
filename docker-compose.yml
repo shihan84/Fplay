@@ -13,11 +13,12 @@ services:
       - DATABASE_URL=file:/data/custom.db
       - PORT=3000
       - REALTIME_CONTROL_URL=http://realtime:3006
+      - CADDYFILE_PATH=/data/Caddyfile
+      - CADDY_ADMIN_URL=http://caddy:2019
     volumes:
       - app-data:/data          # SQLite database persistence
       - app-media:/app/public/media    # Media files storage
       - app-logos:/app/public/logos    # Logo overlay files storage
-      - app-recordings:/app/recordings  # Conformance recordings
     expose:
       - "3000"
     healthcheck:
@@ -70,7 +71,7 @@ services:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
     volumes:
-      - ./Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - ./Caddyfile.prod:/etc/caddy/Caddyfile  # Initial Caddyfile (writable for reload)
       - caddy-data:/data
       - caddy-config:/config
       - app-media:/srv/media:ro
@@ -89,8 +90,6 @@ volumes:
   app-media:
     driver: local
   app-logos:
-    driver: local
-  app-recordings:
     driver: local
   caddy-data:
     driver: local

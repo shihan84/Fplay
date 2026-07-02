@@ -24,7 +24,6 @@ model Channel {
   logos       LogoOverlay[]
   textOverlays TextOverlay[]
   graphics    GraphicsOverlay[]
-  recordings  ConformanceRecording[]
 }
 
 model TextOverlay {
@@ -236,14 +235,13 @@ model GraphicsOverlay {
   updatedAt DateTime @updatedAt
 }
 
-model ConformanceRecording {
-  id        String   @id @default(cuid())
-  channelId String
-  channel   Channel @relation(fields: [channelId], references: [id], onDelete: Cascade)
-  filePath  String
-  fileSize  Int      @default(0)
-  duration  Float    @default(0)
-  startedAt DateTime @default(now())
-  endedAt   DateTime?
-  status    String   @default("recording") // recording, completed, error
+model DomainConfig {
+  id         String   @id @default(cuid())
+  domain     String   @unique
+  sslEnabled Boolean  @default(true)
+  sslStatus  String   @default("none") // none, pending, active, error
+  sslExpiry  DateTime?
+  isDefault  Boolean  @default(false)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
 }

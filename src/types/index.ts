@@ -9,7 +9,7 @@ export type ViewName =
   | 'logs'
   | 'overlay'
   | 'text-overlay'
-  | 'recordings'
+  | 'domains'
 
 export interface Channel {
   id: string
@@ -191,15 +191,15 @@ export interface TextOverlay {
   updatedAt: string
 }
 
-export interface ConformanceRecording {
+export interface DomainConfig {
   id: string
-  channelId: string
-  filePath: string
-  fileSize: number
-  duration: number
-  startedAt: string
-  endedAt: string | null
-  status: 'recording' | 'completed' | 'error'
+  domain: string
+  sslEnabled: boolean
+  sslStatus: 'none' | 'pending' | 'active' | 'error'
+  sslExpiry: string | null
+  isDefault: boolean
+  createdAt: string
+  updatedAt: string
 }
 
 export interface ChannelStatus {

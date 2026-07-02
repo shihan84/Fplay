@@ -16,7 +16,7 @@ import { SettingsPage } from '@/components/pages/SettingsPage'
 import { LogsPage } from '@/components/pages/LogsPage'
 import { OverlayPage } from '@/components/pages/OverlayPage'
 import { TextOverlayPage } from '@/components/pages/TextOverlayPage'
-import { RecordingsPage } from '@/components/pages/RecordingsPage'
+import { DomainsPage } from '@/components/pages/DomainsPage'
 import type { ChannelStatus } from '@/types'
 
 export function AppLayout() {
@@ -67,7 +67,7 @@ export function AppLayout() {
       case 'logs': return <LogsPage />
       case 'overlay': return <OverlayPage />
       case 'text-overlay': return <TextOverlayPage />
-      case 'recordings': return <RecordingsPage />
+      case 'domains': return <DomainsPage />
       default: return <Dashboard />
     }
   }

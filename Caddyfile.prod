@@ -1,3 +1,7 @@
+{
+	admin 0.0.0.0:2019
+}
+
 :80 {
 	# Route XTransformPort=3005 to the realtime (Socket.IO) service
 	@realtime_port query XTransformPort=3005
