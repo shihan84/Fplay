@@ -8,6 +8,11 @@ services:
       dockerfile: Dockerfile
     container_name: ffplayout-app
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '1.5'
+          memory: 1G
     environment:
       - NODE_ENV=production
       - DATABASE_URL=file:/data/custom.db
@@ -39,6 +44,11 @@ services:
       dockerfile: Dockerfile
     container_name: ffplayout-realtime
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '16'
+          memory: 16G
     environment:
       - PORT=3005
       - CONTROL_PORT=3006
@@ -67,6 +77,11 @@ services:
     image: caddy:2-alpine
     container_name: ffplayout-proxy
     restart: unless-stopped
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
     ports:
       - "${HTTP_PORT:-80}:80"
       - "${HTTPS_PORT:-443}:443"
