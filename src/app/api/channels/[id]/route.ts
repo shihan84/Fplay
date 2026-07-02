@@ -21,7 +21,7 @@ export async function GET(
             logs: true,
             logos: true,
             graphics: true,
-            recordings: true,
+            textOverlays: true,
           },
         },
       },
