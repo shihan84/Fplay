@@ -40,23 +40,21 @@ export function AppHeader({ connected }: { connected: boolean }) {
 
   return (
     <header className="flex h-14 items-center gap-4 border-b border-zinc-800 bg-zinc-950/80 backdrop-blur px-4 flex-shrink-0">
-      {/* Mobile menu toggle */}
-      {!sidebarOpen && (
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => setSidebarOpen(true)}
-          className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 md:hidden"
-        >
-          <PanelLeft className="h-4 w-4" />
-        </Button>
-      )}
+      {/* Mobile menu toggle — always visible on mobile */}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        className="text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800 md:hidden shrink-0"
+      >
+        <PanelLeft className="h-4 w-4" />
+      </Button>
 
       {/* Breadcrumb */}
-      <div className="flex items-center gap-2 text-sm">
-        <span className="text-zinc-500 font-medium">F-play</span>
-        <span className="text-zinc-600">/</span>
-        <span className="text-zinc-200 font-medium">{breadcrumb}</span>
+      <div className="flex items-center gap-2 text-sm min-w-0">
+        <span className="text-zinc-500 font-medium hidden sm:inline">F-play</span>
+        <span className="text-zinc-600 hidden sm:inline">/</span>
+        <span className="text-zinc-200 font-medium truncate">{breadcrumb}</span>
       </div>
 
       <div className="ml-auto flex items-center gap-3">

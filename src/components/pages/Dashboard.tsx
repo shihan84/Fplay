@@ -278,14 +278,14 @@ export function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-zinc-100">Dashboard</h1>
-          <p className="text-sm text-zinc-500">Broadcast system overview</p>
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-zinc-100">Dashboard</h1>
+          <p className="text-xs sm:text-sm text-zinc-500">Broadcast system overview</p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 shrink-0">
           <div className={`h-2 w-2 rounded-full ${connected ? 'bg-emerald-400' : 'bg-red-400'}`} />
-          <span className="text-xs text-zinc-500">{connected ? 'Connected' : 'Disconnected'}</span>
+          <span className="text-xs text-zinc-500 hidden sm:inline">{connected ? 'Connected' : 'Disconnected'}</span>
         </div>
       </div>
 
@@ -343,7 +343,7 @@ export function Dashboard() {
                   No channels configured. Create one in Channel Management.
                 </div>
               ) : (
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-2 xl:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">
                   {channels.map((channel) => {
                     const status = channelStatuses[channel.id]
                     const clipProgress =
@@ -390,7 +390,7 @@ export function Dashboard() {
                         </div>
 
                         {/* Mini metrics */}
-                        <div className="mb-3 grid grid-cols-3 gap-2">
+                        <div className="mb-3 grid grid-cols-3 gap-1.5 sm:gap-2">
                           <div>
                             <p className="text-[10px] text-zinc-500">Bitrate</p>
                             <p className="text-xs font-medium text-zinc-300">

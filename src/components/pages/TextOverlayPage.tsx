@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -114,7 +115,7 @@ function OverlayForm({
   return (
     <div className="space-y-5 py-1">
       {/* Name + Type */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm text-zinc-300">Name</Label>
           <Input
@@ -139,18 +140,28 @@ function OverlayForm({
         </div>
       </div>
 
-      {/* Text content */}
+      {/* Text content — textarea for ticker to handle long text */}
       <div className="space-y-1.5">
         <Label className="text-sm text-zinc-300">
           {form.type === 'clock' ? 'Format (uses system time)' : 'Text'}
         </Label>
-        <Input
-          value={form.text ?? ''}
-          onChange={(e) => set('text', e.target.value)}
-          placeholder={form.type === 'clock' ? 'Auto-generates live time as HH-MM-SS' : 'Enter text...'}
-          disabled={form.type === 'clock'}
-          className="bg-zinc-800 border-zinc-700 text-zinc-200 disabled:opacity-50"
-        />
+        {form.type === 'ticker' ? (
+          <Textarea
+            value={form.text ?? ''}
+            onChange={(e) => set('text', e.target.value)}
+            placeholder="Enter scrolling ticker text... (supports long text)"
+            rows={3}
+            className="bg-zinc-800 border-zinc-700 text-zinc-200 resize-y min-h-[60px]"
+          />
+        ) : (
+          <Input
+            value={form.text ?? ''}
+            onChange={(e) => set('text', e.target.value)}
+            placeholder={form.type === 'clock' ? 'Auto-generates live time as HH-MM-SS' : 'Enter text...'}
+            disabled={form.type === 'clock'}
+            className="bg-zinc-800 border-zinc-700 text-zinc-200 disabled:opacity-50"
+          />
+        )}
       </div>
 
       {/* Lower third sub-text */}
@@ -169,12 +180,12 @@ function OverlayForm({
       {/* Font family picker */}
       <div className="space-y-1.5">
         <Label className="text-sm text-zinc-300">Font Family</Label>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <Input
             value={fontSearch}
             onChange={(e) => setFontSearch(e.target.value)}
             placeholder="Search fonts..."
-            className="bg-zinc-800 border-zinc-700 text-zinc-200 w-48"
+            className="bg-zinc-800 border-zinc-700 text-zinc-200 sm:w-48"
           />
           <Select
             value={form.fontFile ?? ''}
@@ -199,7 +210,7 @@ function OverlayForm({
       </div>
 
       {/* Font size + color */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm text-zinc-300">Font Size</Label>
           <Input
@@ -240,7 +251,7 @@ function OverlayForm({
       </div>
 
       {/* Outline */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm text-zinc-300">Outline Width (px)</Label>
           <Input
@@ -269,7 +280,7 @@ function OverlayForm({
       </div>
 
       {/* Background */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div className="space-y-1.5">
           <Label className="text-sm text-zinc-300">Background Color (empty = none)</Label>
           <div className="flex gap-2">
@@ -305,7 +316,7 @@ function OverlayForm({
 
       {/* Position — not for ticker */}
       {form.type !== 'ticker' && form.type !== 'lowerthird' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-sm text-zinc-300">Position X</Label>
             <Select value={form.posX ?? 'center'} onValueChange={(v) => set('posX', v)}>
@@ -337,7 +348,7 @@ function OverlayForm({
 
       {/* Offset */}
       {form.type !== 'ticker' && (
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="space-y-1.5">
             <Label className="text-sm text-zinc-300">Offset X (px)</Label>
             <Input
@@ -452,14 +463,14 @@ export function TextOverlayPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between gap-4 flex-wrap">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
           <h1 className="text-xl font-semibold text-zinc-100">Text Overlays</h1>
           <p className="text-sm text-zinc-500 mt-0.5">Scrolling tickers, static text, live clock, lower thirds</p>
         </div>
         <div className="flex items-center gap-3">
           <Select value={channelId} onValueChange={setSelectedChannel}>
-            <SelectTrigger className="w-48 bg-zinc-900 border-zinc-700 text-zinc-200">
+            <SelectTrigger className="w-full sm:w-48 bg-zinc-900 border-zinc-700 text-zinc-200">
               <SelectValue placeholder="Select channel" />
             </SelectTrigger>
             <SelectContent>
@@ -485,7 +496,7 @@ export function TextOverlayPage() {
       </div>
 
       {/* Type guide cards */}
-      <div className="grid grid-cols-4 gap-3">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {Object.entries(TYPE_LABELS).map(([type, label]) => {
           const Icon = TYPE_ICONS[type]
           const count = overlays.filter((o) => o.type === type).length
@@ -548,7 +559,7 @@ export function TextOverlayPage() {
                             {o.active ? 'Active' : 'Inactive'}
                           </Badge>
                         </div>
-                        <p className="text-xs text-zinc-500 mt-1 truncate">
+                        <p className="text-xs text-zinc-500 mt-1 break-words line-clamp-2">
                           {o.type === 'clock' ? '⏱ Live clock — HH:MM:SS' : `"${o.text}"`}
                           {o.type === 'lowerthird' && o.subText ? ` / "${o.subText}"` : ''}
                         </p>
@@ -560,7 +571,7 @@ export function TextOverlayPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 shrink-0">
+                    <div className="flex items-center gap-1 sm:gap-2 shrink-0">
                       <Switch
                         checked={o.active}
                         onCheckedChange={() => toggleMutation.mutate(o)}
@@ -593,7 +604,7 @@ export function TextOverlayPage() {
 
       {/* Create/Edit dialog */}
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 max-w-xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="bg-zinc-900 border-zinc-800 text-zinc-100 max-w-xl w-[95vw] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>{editing ? 'Edit Overlay' : 'New Text Overlay'}</DialogTitle>
           </DialogHeader>

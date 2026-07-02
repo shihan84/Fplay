@@ -1,7 +1,7 @@
 'use client'
 
-import { useEffect } from 'react'
-import { motion } from 'framer-motion'
+import { useEffect, useCallback } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import {
   LayoutDashboard, Radio, FolderOpen, ListVideo, Play,
   Layers, Settings, FileText, HardDrive, Tv, ChevronLeft,
@@ -39,13 +39,53 @@ export function AppSidebar() {
   const { activeView, setActiveView, sidebarOpen, setSidebarOpen, channels, navigateToChannel } = useAppStore()
   const runningCount = channels.filter(c => c.status === 'running').length
 
+  // Auto-collapse sidebar on small screens
+  useEffect(() => {
+    const mq = window.matchMedia('(max-width: 767px)')
+    const handler = (e: MediaQueryListEvent | MediaQueryList) => {
+      if (e.matches) setSidebarOpen(false)
+    }
+    handler(mq)
+    mq.addEventListener('change', handler)
+    return () => mq.removeEventListener('change', handler)
+  }, [setSidebarOpen])
+
+  // Close sidebar on navigation for mobile
+  const handleNav = useCallback((view: ViewName) => {
+    setActiveView(view)
+    if (window.innerWidth < 768) setSidebarOpen(false)
+  }, [setActiveView, setSidebarOpen])
+
+  const handleChannelNav = useCallback((id: string) => {
+    navigateToChannel(id)
+    if (window.innerWidth < 768) setSidebarOpen(false)
+  }, [navigateToChannel, setSidebarOpen])
+
   return (
     <TooltipProvider delayDuration={0}>
+      {/* Mobile backdrop */}
+      <AnimatePresence>
+        {sidebarOpen && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
+            onClick={() => setSidebarOpen(false)}
+            className="fixed inset-0 z-40 bg-black/60 md:hidden"
+          />
+        )}
+      </AnimatePresence>
       <motion.aside
         initial={false}
         animate={{ width: sidebarOpen ? 260 : 64 }}
         transition={{ duration: 0.2, ease: 'easeInOut' }}
-        className="flex flex-col border-r border-zinc-800 bg-zinc-950 overflow-hidden flex-shrink-0"
+        className={cn(
+          'flex flex-col border-r border-zinc-800 bg-zinc-950 overflow-hidden flex-shrink-0',
+          // On mobile: fixed overlay when open, hidden when collapsed
+          'max-md:fixed max-md:inset-y-0 max-md:left-0 max-md:z-50',
+          !sidebarOpen && 'max-md:hidden'
+        )}
       >
         {/* Logo */}
         <div className="flex h-14 items-center gap-3 px-4 border-b border-zinc-800">
@@ -77,7 +117,7 @@ export function AppSidebar() {
             const button = (
               <button
                 key={item.view}
-                onClick={() => setActiveView(item.view)}
+                onClick={() => handleNav(item.view)}
                 className={cn(
                   'flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-all duration-150',
                   isActive
@@ -130,7 +170,7 @@ export function AppSidebar() {
                 <Tooltip key={ch.id}>
                   <TooltipTrigger asChild>
                     <button
-                      onClick={() => navigateToChannel(ch.id)}
+                      onClick={() => handleChannelNav(ch.id)}
                       className="flex w-full items-center gap-2.5 rounded-lg px-3 py-1.5 text-sm text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-200 transition-colors"
                     >
                       <span className={cn('h-2 w-2 rounded-full flex-shrink-0', statusColors[ch.status] || 'bg-zinc-500')} />
