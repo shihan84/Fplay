@@ -57,4 +57,5 @@ server.log
 /db/
 tool-results/
 .zscripts/
-dashboard.png
+# Allow doc screenshots
+!docs/screenshots/

@@ -11,6 +11,30 @@
 
 ---
 
+## Screenshots
+
+### Dashboard
+Real-time system monitoring with channel status, CPU/memory graphs, and live stream metrics.
+
+![Dashboard](docs/screenshots/dashboard.png)
+
+### Channel Management
+Create and manage multiple broadcast channels with per-channel settings and status indicators.
+
+![Channels](docs/screenshots/channels.png)
+
+### Playout Controls
+Live stream control panel with start/stop, playlist management, and real-time encoding stats.
+
+![Playout Controls](docs/screenshots/playout-control.png)
+
+### Settings
+Per-channel output configuration — resolution, bitrate, FPS, codec, RTMP endpoint, and more.
+
+![Settings](docs/screenshots/settings.png)
+
+---
+
 ## Key Features
 
 - **Multi-Channel Playout** — Manage multiple independent broadcast channels simultaneously
@@ -19,10 +43,11 @@
 - **Playlist Scheduler** — Drag-and-drop playlist editor with loop and filler support
 - **Media Library** — Upload and manage video/audio assets with metadata
 - **Graphics & Overlays** — Logo and text overlay management per channel
+- **Text Overlays** — Live clock, scrolling tickers, static text, and lower thirds with 2000+ multilingual fonts (Noto CJK, Arabic, Hebrew, Indic, and more)
 - **Stream Monitoring** — Real-time status, logs, and as-run logging
 - **Recordings** — On-demand recording with conformance monitoring
 - **Settings** — Per-channel output configuration (bitrate, resolution, FPS, RTMP key)
-- **Responsive UI** — Dark-mode web interface accessible from any browser
+- **Mobile Responsive** — Fully responsive dark-mode UI optimized for desktop, tablet, and mobile
 
 ---
 
